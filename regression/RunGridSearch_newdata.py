@@ -8,12 +8,13 @@ from EDV import ExpectedDistributionVisualiser
 from OD import ObservedDistribution
 from GSED import GridSearchED
 from joblib import Parallel, delayed
+from S import Surprise
 import time
 from elementtree.SimpleXMLWriter import XMLWriter
 
 
-def plotAndSave(od,ed,fn):
-	edv = ExpectedDistributionVisualiser(ed,od,50,50)
+def plotAndSave(od,ed, fn):
+	edv = ExpectedDistributionVisualiser(ed,od,s,50,50)
 	#fig=edv.plotSurpriseGradient()
 	fig = od.plotArtefacts(stroke='black',fill='black')
 	edv.plotExpectationContours(plot=fig,showDU=True,showMU=True)

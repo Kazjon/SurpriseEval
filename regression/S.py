@@ -11,15 +11,19 @@ from joblib import Parallel, delayed
 
 class Surprise:
 	
-	def __init__(self, updater, ed=None, params={'C':1,'gamma':0.01}, prefix = ""):
+	def __init__(self, updater=None, ed=None, params={'C':1,'gamma':0.01}, prefix = ""):
 		self.params = params
 		self.updater = updater
 		self.prefix = prefix
 		self.ed = ed
+		self.edv = None
 		self.prevFunctions = {}
 		if ed is None:
 			self.ed = ExpectedDistribution(self.updater, self.params)
-		self.edv = ExpectedDistributionVisualiser(self.ed, self.updater)
+			
+	def createVisualiser(self, xres=100, yres=100):
+		self.edv = ExpectedDistributionVisualiser(self.ed, self.updater, self, xres, yres)
+		return self.edv
 	
 	def filename(self, index=-1):
 		indexString = ' '+str(index)
@@ -46,6 +50,8 @@ class Surprise:
 			return None
 	
 	def surpriseList(self, recompute=False, update=True, plotAtUpdate=False):
+		if self.edv is None:
+			self.createVisualiser()
 		surprise_list = self.readList()
 		if surprise_list is None or recompute:
 			test_list = self.updater.getList(False)
@@ -81,7 +87,7 @@ class Surprise:
 					print "updating",i
 					self.updater.update(max_ind)
 					self.ed = ExpectedDistribution(self.updater, self.params)
-					self.edv = ExpectedDistributionVisualiser(self.ed, self.updater)
+					self.edv = self.createVisualiser()
 				if i >= old_index * 2:
 					self.saveList(surprise_list, i, old_index)
 					old_index = i
@@ -91,20 +97,22 @@ class Surprise:
 		return surprise_list
 	
 	def makePlot(self, filename, surprise_list, test_list):
-			ind_vals, dep_vals, names = zip(*test_list)
-			fig = self.edv.plotExpectationContours(showDU=True,showMU=True)
-			#fig = self.updater.plotArtefacts(plot=fig, fill='green')
-			#fig = self.updater.plotObservedContours(plot=fig)
-			fig = self.plotArtefacts(surprise_list=zip(surprise_list, test_list), plot=fig)
-			fig.set_title(str(self.updater.weight_std_ratio))
-			fig.set_xlabel(self.updater.indAttrName())
-			fig.set_ylabel(self.updater.depAttrName())
-			ind_buffer = (max(ind_vals) - min(ind_vals))*.05
-			dep_buffer = (max(dep_vals) - min(dep_vals))*.05
-			fig.set_xlim(min(ind_vals)-ind_buffer, max(ind_vals)+ind_buffer)
-			fig.set_ylim(min(dep_vals)-dep_buffer, max(dep_vals)+dep_buffer)
-			self.updater.save(filename)
-	
+		if self.edv is None:
+			self.createVisualiser()
+		ind_vals, dep_vals, names = zip(*test_list)
+		fig = self.edv.plotExpectationContours(showDU=True,showMU=True)
+		#fig = self.updater.plotArtefacts(plot=fig, fill='green')
+		#fig = self.updater.plotObservedContours(plot=fig)
+		fig = self.plotArtefacts(surprise_list=zip(surprise_list, test_list), plot=fig)
+		fig.set_title(str(self.updater.weight_std_ratio))
+		fig.set_xlabel(self.updater.indAttrName())
+		fig.set_ylabel(self.updater.depAttrName())
+		ind_buffer = (max(ind_vals) - min(ind_vals))*.05
+		dep_buffer = (max(dep_vals) - min(dep_vals))*.05
+		fig.set_xlim(min(ind_vals)-ind_buffer, max(ind_vals)+ind_buffer)
+		fig.set_ylim(min(dep_vals)-dep_buffer, max(dep_vals)+dep_buffer)
+		self.updater.save(filename)
+
 	def surpriseFunction(self, indval):
 		if self.prevFunctions.get(indval, False):
 			return self.prevFunctions[indval]
@@ -149,6 +157,8 @@ class Surprise:
 		return surprise,raw_surprise
 	
 	def surpriseFig(self, indval, depval, fig, alpha=1):
+		if self.edv is None:
+			self.createVisualiser()
 		f,uncertainty = self.surpriseFunction(indval)
 		mpl.rcParams['lines.linewidth'] = 1
 		pl.ylim(-1,1)
@@ -169,6 +179,8 @@ class Surprise:
 		fig.set_ylabel("Surprise (ignore sign)")
 	
 	def plotArtefacts(self,surprise_list=None,stroke=None,fill='black',plot=None,alpha=1):
+		if self.edv is None:
+			self.createVisualiser()
 		if plot is None:
 			plot = pl.figure().add_subplot(1,1,1)
 		
@@ -222,6 +234,7 @@ if __name__ == "__main__":
 				continue
 			updater = Updater(parser_train, ind_attr, contours, dep_attr, .3, parser_test=parser_test)
 			surprise = Surprise(updater, params={'C':10,'gamma':0.03})
+			edv = surprise.createVisualiser()
 			surprise_list = surprise.surpriseList(plotAtUpdate=True)
 			test_list = updater.getList(False)
 			print 'least', surprise_list[0:number_to_print]

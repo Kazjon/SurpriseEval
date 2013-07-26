@@ -9,11 +9,12 @@ from matplotlib.collections import LineCollection
 class ExpectedDistributionVisualiser:
 	
 	#Create a new EDV object, passing it the meshing resolution on the X and Y axes, which are used for plotting.
-	def __init__(self, _ED, _OD, _xres=100, _yres=100):
-		self.ED = _ED
-		self.OD = _OD
-		self.xres = _xres
-		self.yres = _yres
+	def __init__(self, ED, OD, surprise, xres=100, yres=100):
+		self.ED = ED
+		self.OD = OD
+		self.surprise = surprise
+		self.xres = xres
+		self.yres = yres
 	
 	#Plot the data the contours are based off of
 	def plotGreenDots(self, projection = [0,0], plot=None, alpha=1):
@@ -31,7 +32,7 @@ class ExpectedDistributionVisualiser:
 			#showMU: Whether to show the misclassification uncertainty as blue/red colouration.
 			#plot: where to plot (None saves to a file instead)
 			#alpha: transparency of everything to be drawn
-	def plotExpectationContours(self, projection = [0,0], showDU=False, showMU=False, plot=None, alpha=1, ignore_eps=False):
+	def plotExpectationContours(self, projection = [0,0], showDU=False, showMU=False, plot=None, alpha=1):
 		if plot is None:
 			plot = pl.figure().add_subplot(1,1,1)
 		self.setLimits(xprojection=projection)
@@ -48,7 +49,7 @@ class ExpectedDistributionVisualiser:
 		if showDU:
 			DUvals = self.OD.distanceUncertainty(x)
 		if showMU:
-			MUvals = self.ED.misclassUncertainty(x, ignore_eps=ignore_eps)
+			MUvals = self.ED.misclassUncertainty(x)
 		scaling = 1-np.minimum(np.ones(len(x)),DUvals+MUvals)	
 		for i,b in enumerate(self.OD.bins):
 			alpha = 1-(abs(i-len(self.OD.bins)/2.0)/float(len(self.OD.bins)/2.0)) # Weight the colour of the contour to the distance from the median
@@ -78,7 +79,7 @@ class ExpectedDistributionVisualiser:
 		#onMedian: Whether to plot as a channel around the median, or as a separate plot.
 		#plot: where to plot (None saves to a file instead)
 		#alpha: transparency of everything to be drawn
-	def plotUncertaintyChannel(self, projection = [0,0], showDU=True, showMU=True, onMedian=True, plot=None, alpha=0.5, ignore_eps = False):
+	def plotUncertaintyChannel(self, projection = [0,0], showDU=True, showMU=True, onMedian=True, plot=None, alpha=0.5):
 		if plot is None:
 			plot = pl.figure().add_subplot(1,1,1)
 		self.setLimits()
@@ -95,7 +96,7 @@ class ExpectedDistributionVisualiser:
 		if showDU:
 			DUvals = self.OD.distanceUncertainty(x)
 		if showMU:
-			MUvals = self.ED.misclassUncertainty(x, ignore_eps=ignore_eps)
+			MUvals = self.ED.misclassUncertainty(x)
 		if onMedian:
 			error_scale = np.mean(y_pred[self.OD.bins[-1]]-y_pred[self.OD.bins[0]])
 			MUvals *= error_scale
@@ -116,7 +117,7 @@ class ExpectedDistributionVisualiser:
 		#projection: a tuple for how far to the left and right of the plot to extend.
 		#plot: where to plot (None saves to a file instead)
 		#alpha: transparency of everything to be drawn
-	def plotSurpriseGradient(self, projection = [0,0], plot=None, alpha=1, ignore_eps=False):
+	def plotSurpriseGradient(self, projection = [0,0], plot=None, alpha=1):
 		if plot is None:
 			plot = pl.figure().add_subplot(1,1,1)
 		self.setLimits(xprojection=projection)
@@ -133,7 +134,9 @@ class ExpectedDistributionVisualiser:
 		surpriseFuncs = []
 		uncerts = []
 		for v in x:
-			sF,u = self.ED.surpriseCalc(v,0,fig=None,dep_scaled=False,returnFunction=True, ignore_eps=ignore_eps)
+			if hasattr(v, '__len__'):
+				v = v[0]
+			sF,u = self.surprise.surpriseFunction(v)
 			surpriseFuncs.append(sF)
 			uncerts.append(u)
 		surpriseVals = []
@@ -153,10 +156,12 @@ class ExpectedDistributionVisualiser:
 		#y: The y axis value to evaluate surprise at.
 		#plot: where to plot (None saves to a file instead)
 		#alpha: transparency of everything to be drawn
-	def plotSurpriseDistribution(self, x, y, plot=None, alpha=1, scaled=False, ignore_eps=False):
+	def plotSurpriseDistribution(self, x, y, plot=None, alpha=1, scaled=False):
+		if scaled:
+			y = self.OD.unscalePoints(y)
 		if plot is None:
 			plot = pl.figure().add_subplot(1,1,1)
-		self.ED.surpriseCalc(x, y, plot,alpha=alpha,dep_scaled=scaled, ignore_eps=ignore_eps) 
+		self.surprise.surpriseFig(x, y, plot,alpha=alpha) 
 	
 	#Plot a single artefact along with its surprisingness in the space defined by the dependent and independent variables.
 		#x: The x axis value of the artefact, or None for a random one.
