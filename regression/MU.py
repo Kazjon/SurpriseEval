@@ -34,10 +34,11 @@ class MisclassUncert:
 			inLastBin = np.ones(len(weights))
 			# Enumerate through the observed values and find which bins they fall into
 			for k,point in enumerate(self.dep_list):
+				k_index = self.OD.listToContours[k]
 				# Enumerate through the bins starting with the smallest one
 				for j,b in enumerate(self.bins):
 					# if a point occurs bellow the bin boundary then it is in that bin since we are moving up through the bins
-					if point < predictionVectors[b][k]:
+					if point < predictionVectors[b][k_index]:
 						inLastBin[k] = 0
 						observed[j] += weights[k]
 						break
@@ -79,23 +80,24 @@ class MisclassUncert:
 			inLastBin = np.ones(len(weights))
 			# Enumerate through the observed values and find which bins they fall into
 			for k,point in enumerate(self.dep_list):
+				k_index = self.OD.listToContours[k]
 				# Enumerate through the bins starting with the smallest one
 				for j,b in enumerate(self.bins):
 					# if a point occurs bellow the bin boundary then it is in that bin since we are moving up through the bins
-					if point < predictionVectors[b][k] - epsilon * 0.5:
-						inLastBin[k] = 0
-						observed[j] += weights[k]
+					if point < predictionVectors[b][k_index] - epsilon * 0.5:
+						inLastBin[k_index] = 0
+						observed[j] += weights[k_index]
 						break
-					elif point < predictionVectors[b][k] + epsilon * 0.5:
-						inLastBin[k] = 0
+					elif point < predictionVectors[b][k_index] + epsilon * 0.5:
+						inLastBin[k_index] = 0
 						overlapIndex = j+1
 						spreadCount = 1
 						#While this point is still within epsilon of the next bin, spread its weights out over the next few bins.
-						while overlapIndex < len(self.bins) and point > predictionVectors[self.bins[overlapIndex]][k] - epsilon * 0.5:
+						while overlapIndex < len(self.bins) and point > predictionVectors[self.bins[overlapIndex]][k_index] - epsilon * 0.5:
 							overlapIndex += 1
 							spreadCount += 1
 						for v in xrange(j,overlapIndex):
-							observedWithinEpsilon[v] += weights[k]/spreadCount
+							observedWithinEpsilon[v] += weights[k_index]/spreadCount
 						break
 			observed[-1] = sum(weights*inLastBin)
 			diffs = np.subtract(observed,weighted_hist)

@@ -11,14 +11,15 @@ from joblib import Parallel, delayed
 
 class Surprise:
 	
-	def __init__(self, updater, ed=None, prefix = ""):
+	def __init__(self, updater, ed=None, params={'C':1,'gamma':0.01}, prefix = ""):
+		self.params = params
 		self.updater = updater
 		self.prefix = prefix
 		self.ed = ed
 		self.prevFunctions = {}
 		if ed is None:
-			self.ed = ExpectedDistribution(self.updater)
-		self.edv = ExpectedDistributionVisualiser(self.ed, self.updater, self)
+			self.ed = ExpectedDistribution(self.updater, self.params)
+		self.edv = ExpectedDistributionVisualiser(self.ed, self.updater)
 	
 	def filename(self, index=-1):
 		indexString = ' '+str(index)
@@ -66,18 +67,21 @@ class Surprise:
 					max_ind = test_list[start_index][0]
 			imageCounter = 0;
 			for i in range(start_index, len(test_list)):
-				count = "%05d" % imageCounter
-				imageCounter += 1
 				ind, dep, name = test_list[i]
 				surprise_list.append(self.surpriseCalc(ind, dep)[0])
 				if ind > max_ind:
 					max_ind = ind
 					if plotAtUpdate:
+						count = "%05d" % imageCounter
+						imageCounter += 1
+						#number_to_print = 5
+						#print 'least', surprise_list[0:number_to_print]
+						#print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]
 						self.makePlot('surprise_'+count+'.png', surprise_list, test_list[0:i+1])
-					print "updating"
+					print "updating",i
 					self.updater.update(max_ind)
-					self.ed = ExpectedDistribution(self.updater)
-					self.edv = ExpectedDistributionVisualiser(self.ed, self.updater, self)
+					self.ed = ExpectedDistribution(self.updater, self.params)
+					self.edv = ExpectedDistributionVisualiser(self.ed, self.updater)
 				if i >= old_index * 2:
 					self.saveList(surprise_list, i, old_index)
 					old_index = i
@@ -88,7 +92,7 @@ class Surprise:
 	
 	def makePlot(self, filename, surprise_list, test_list):
 			ind_vals, dep_vals, names = zip(*test_list)
-			fig = self.edv.plotExpectationContours()
+			fig = self.edv.plotExpectationContours(showDU=True,showMU=True)
 			#fig = self.updater.plotArtefacts(plot=fig, fill='green')
 			#fig = self.updater.plotObservedContours(plot=fig)
 			fig = self.plotArtefacts(surprise_list=zip(surprise_list, test_list), plot=fig)
@@ -179,9 +183,10 @@ class Surprise:
 				colors.append('red')
 			else:
 				colors.append(fill)
-		S = [max((s ** 2)*30,1) for s in s_list]
+		S = [max((s ** 3)*30,1) for s in s_list]
 		x = [s[1][0] for s in surprise_list]
 		y = [s[1][1] for s in surprise_list]
+		
 		plot.scatter(x, y, edgecolor=stroke,facecolor=colors,s=S,lw=0.25,alpha=alpha)
 #		for (ind, dep, name) in test_list:
 #			fig.annotate(
@@ -212,13 +217,12 @@ if __name__ == "__main__":
 	
 	properties = parser_train.getProperties()
 	for ind_attr in [properties[0]]:
-		for dep_attr in [properties[-1]]:
+		for dep_attr in ['Display Diagonal (in)']:
 			if ind_attr == dep_attr:
 				continue
 			updater = Updater(parser_train, ind_attr, contours, dep_attr, .3, parser_test=parser_test)
-			surprise = Surprise(updater)
-			edv = ExpectedDistributionVisualiser(surprise.ed, updater, surprise)
-			surprise_list = surprise.surpriseList()
-			test_list = self.updater.getList(False)
+			surprise = Surprise(updater, params={'C':10,'gamma':0.03})
+			surprise_list = surprise.surpriseList(plotAtUpdate=True)
+			test_list = updater.getList(False)
 			print 'least', surprise_list[0:number_to_print]
 			print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]
