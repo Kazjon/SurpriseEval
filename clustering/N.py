@@ -31,7 +31,7 @@ import inspect
 from COBWEB import COBWEB
 from M import Measure
 
-class ConceptTree:
+class Node:
 	mergedNodes = []
 	splitNodes = []
 
@@ -63,7 +63,7 @@ class ConceptTree:
 		self.CBWB = COBWEB(self)
 	
 	def makeTree(self, root=None, parent=None, concept_tree=None):
-		return ConceptTree(root, parent, concept_tree)
+		return Node(root, parent, concept_tree)
 	
 	def saveObject(self, filename):
 		with open(filename, 'wb') as output:
@@ -77,8 +77,8 @@ class ConceptTree:
 				setattr(self, a[0], a[1])
 	
 	def firstCobweb(self, instance):
-		ConceptTree.mergedNodes = []
-		ConceptTree.splitNodes = []
+		Node.mergedNodes = []
+		Node.splitNodes = []
 		self.CBWB.firstCobweb(instance)
 	
 	def cobweb(self, instance):
@@ -107,26 +107,26 @@ def addInc(t, instance):
 	t.firstCobweb(instance)
 	# Children are used to describe nodes so disapearing addresses are not an issue
 	# This is a list of the children of each node which was merged
-	mergedNodes = [x for x in ConceptTree.mergedNodes if not (x in ConceptTree.splitNodes)]
+	mergedNodes = [x for x in Node.mergedNodes if not (x in Node.splitNodes)]
 	# This is a list of the children of each node which was split
-	splitNodes = [x for x in ConceptTree.splitNodes if not (x in ConceptTree.mergedNodes)]
+	splitNodes = [x for x in Node.splitNodes if not (x in Node.mergedNodes)]
 	# The children of a merged node are one step deeper than the node that was merged
 	instance.merges = [-1 if nodeList == [] else max([node.measure.getDepth() for node in nodeList])-1 for nodeList in mergedNodes]
 	# The children of a split node are not since they moved up after their parent was split
 	instance.splits = [-1 if nodeList == [] else max([node.measure.getDepth() for node in nodeList]) for nodeList in splitNodes]
-	instance.depth = t.measure.getInstanceDepth(instance)
+	instance.depth = float(t.measure.getInstanceDepth(instance))/np.log(t.utility.count)
 
 if __name__ == "__main__":
 	# Read in Data
 	namecols = [0]
 	timecols = [2]
-	valcols = [3,4]
+	valcols = [9, 10]
 	parser = Parser("AllPhoneData_pruned.csv",namecols,timecols,valcols,normalize=True)
 	
 	index = 0
-	t = ConceptTree()
+	t = Node()
 
-	while not parser.atEnd():
+	while parser.index < 500:
 		addInc(t, parser.getNext())
 	t.viz.plotClusters(Instance.properties[0], Instance.properties[1], depth=1)
 	
