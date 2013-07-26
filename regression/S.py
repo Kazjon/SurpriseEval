@@ -64,13 +64,16 @@ class Surprise:
 				start_index = 0
 				if test_list[start_index][0] > max_ind:
 					max_ind = test_list[start_index][0]
+			imageCounter = 0;
 			for i in range(start_index, len(test_list)):
+				count = "%05d" % imageCounter
+				imageCounter += 1
 				ind, dep, name = test_list[i]
 				surprise_list.append(self.surpriseCalc(ind, dep)[0])
 				if ind > max_ind:
 					max_ind = ind
 					if plotAtUpdate:
-						self.makePlot('surprise_'+str(i)+'.png', surprise_list, test_list[0:i+1])
+						self.makePlot('surprise_'+count+'.png', surprise_list, test_list[0:i+1])
 					print "updating"
 					self.updater.update(max_ind)
 					self.ed = ExpectedDistribution(self.updater)
@@ -217,8 +220,5 @@ if __name__ == "__main__":
 			edv = ExpectedDistributionVisualiser(surprise.ed, updater, surprise)
 			surprise_list = surprise.surpriseList()
 			test_list = self.updater.getList(False)
-			filename = ind_attr+' '+dep_attr+'_surprise.png'
-			filename = filename.replace(' ', '_')
-			surprise.makePlot(filename, surprise_list, test_list)
 			print 'least', surprise_list[0:number_to_print]
 			print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]
