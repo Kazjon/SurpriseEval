@@ -38,10 +38,10 @@ class ExpectedDistribution:
 	def train(self):
 		regressors = []
 		if self.parallel:
-			regressors = Parallel(n_jobs=-1)(delayed(trainBin)(self.params[b], np.array([self.ind]).T, self.dep[b]) for b in self.OD.bins)
+			regressors = Parallel(n_jobs=-1)(delayed(trainBin)(self.params[b], np.atleast_2d(self.ind).T, self.dep[b]) for b in self.OD.bins)
 		else:
 			for b in self.OD.bins:
-				regressors.append(trainBin(self.params[b],np.array([self.ind]).T, self.dep[b]))
+				regressors.append(trainBin(self.params[b],np.atleast_2d(self.ind).T, self.dep[b]))
 				#self.svr[b] = SVR(cache_size=1000,kernel='rbf', C=self.params[b]['C'], gamma=self.params[b]['gamma'])
 				#self.svr[b].fit(np.array([self.ind]).T,self.dep[b])
 		for i,model in enumerate(regressors):

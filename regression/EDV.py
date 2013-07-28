@@ -15,7 +15,7 @@ class ExpectedDistributionVisualiser:
 		self.surprise = surprise
 		self.xres = xres
 		self.yres = yres
-		self.prefix = ""
+		self.prefix = prefix
 
 	#Plot the contours of the expected distribution in the space defined by the dependent and independent variables.
 			#projection: a tuple for how far to the left and right of the plot to extend.
@@ -194,6 +194,6 @@ class ExpectedDistributionVisualiser:
 	
 	#Save the current plot to a given filename.
 	def save(self,filename,printConfirmation=True):
-		pl.savefig(os.path.join(prefix,filename))
+		pl.savefig(os.path.join(self.prefix,filename))
 		if printConfirmation:
 			print 'Saved',filename

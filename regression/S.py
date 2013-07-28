@@ -53,7 +53,7 @@ class Surprise:
 		else:
 			return None
 	
-	def surpriseList(self, recompute=False, update=True, plotAtUpdate=False):
+	def runUpdaterAndCalcSurprise(self, recompute=False, update=True, plotAtUpdate=False):
 		if self.edv is None:
 			self.createVisualiser()
 		surprise_list = self.readList()
@@ -87,7 +87,9 @@ class Surprise:
 						#number_to_print = 5
 						#print 'least', surprise_list[0:number_to_print]
 						#print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]
-						self.makePlot('surprise_'+count+'.png', surprise_list, test_list[0:i+1])
+						fn = "Surprise "+self.updater.indAttrName()+" "+self.updater.depAttrName()+" "+count
+						fn = fn.replace(" ","_")
+						self.makePlot(fn+'.jpg', surprise_list, test_list[0:i+1])
 					print "updating",i
 					self.updater.update(max_ind)
 					self.ed = ExpectedDistribution(self.updater, self.params)
@@ -113,15 +115,15 @@ class Surprise:
 		fig.set_ylabel(self.updater.depAttrName())
 		ind_buffer = (max(ind_vals) - min(ind_vals))*.05
 		dep_buffer = (max(dep_vals) - min(dep_vals))*.05
-		if self.xlims = None:
+		if self.xlims == None:
 			fig.set_xlim(min(ind_vals)-ind_buffer, max(ind_vals)+ind_buffer)
 		else:
 			fig.set_xlim(self.xlims[0],self.xlims[1])
-		if self.ylims = None:
+		if self.ylims == None:
 			fig.set_ylim(min(dep_vals)-dep_buffer, max(dep_vals)+dep_buffer)
 		else:
 			fig.set_ylim(self.ylims[0],self.ylims[1])
-		self.updater.save(os.path.join(self.plotprefix,filename)
+		self.updater.save(os.path.join(self.plotprefix,filename))
 
 	def surpriseFunction(self, indval):
 		if self.prevFunctions.get(indval, False):
@@ -229,8 +231,8 @@ if __name__ == "__main__":
 	namecols = [0]
 	timecols = [2]
 	valcols = [2,3,4,5,6,7,8,9,10,11,12,13,14]
-	parser_train = Parser("AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_train)
-	parser_test = Parser("AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_test)
+	parser_train = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_train)
+	parser_test = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_test)
 #	namecols = [1,2]
 #	timecols = [11]
 #	valcols = [3,4,5,6,7,8,9,11]
@@ -244,10 +246,11 @@ if __name__ == "__main__":
 		for dep_attr in ['Depth (mm)']:
 			if ind_attr == dep_attr:
 				continue
-			updater = Updater(parser_train, ind_attr, contours, dep_attr, .15, parser_test=parser_test)
+			odpath = "ods/"+ind_attr.replace(" ","_").replace("(","").replace(")","")
+			updater = Updater(parser_train, ind_attr, contours, dep_attr, .15, parser_test=parser_test,path=odpath, save=False)
 			surprise = Surprise(updater, params={'C':1,'gamma':0.01})
 			edv = surprise.createVisualiser(250,250)
-			surprise_list = surprise.surpriseList(plotAtUpdate=True)
+			surprise_list = surprise.runUpdaterAndCalcSurprise(recompute=True, plotAtUpdate=True)
 			test_list = updater.getList(False)
 			print 'least', surprise_list[0:number_to_print]
 			print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]

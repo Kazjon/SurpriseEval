@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 
 class Updater(ObservedDistribution):
 	
-	def __init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio=1, parser_test=None, retrain=False, prefix='.'):
+	def __init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio=1, parser_test=None, retrain=True, prefix='ods/'):
 		ObservedDistribution.__init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio, retrain, prefix)
 		self.addTestData(parser_test)
 	
@@ -29,14 +29,14 @@ class Updater(ObservedDistribution):
 			self.Data.instances.append(inst)
 			self.test_parser.pastCalc = {}
 			self.Data.pastCalc = {}
-		indecies = self.refresh(ind_val)
-		for i in indecies:
+		indices = self.refresh(ind_val)
+		for i in indices:
 			self.weights.insert(i, np.array([]))
-		new_sorted_ind_list = [self.sorted_ind_list[i] for i in indecies]
+		new_sorted_ind_list = [self.sorted_ind_list[i] for i in indices]
 		
 		# Parallel computation:
-		results, self.weights = zip(*Parallel(n_jobs=-1)(delayed(OD.updateBins)(self.ind[i], self.sorted_ind_list, self.sorted_dep_list, new_sorted_ind_list, OD.weightFunction, OD.findBins, OD.findNewBins, OD.findResults, self.weightFactor, self.bins, self.weights[i], indecies) for i in range(len(self.ind))))
-		#print np.array(self.weights)[indecies]
+		results, self.weights = zip(*Parallel(n_jobs=-1)(delayed(OD.updateBins)(self.ind[i], self.sorted_ind_list, self.sorted_dep_list, new_sorted_ind_list, OD.weightFunction, OD.findBins, OD.findNewBins, OD.findResults, self.weightFactor, self.bins, self.weights[i], indices) for i in range(len(self.ind))))
+		#print np.array(self.weights)[indices]
 		self.finishTraining(results)
 	
 	def toBeginning(self):
