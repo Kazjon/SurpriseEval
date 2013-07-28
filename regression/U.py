@@ -93,8 +93,8 @@ if __name__ == "__main__":
 	namecols = [0]
 	timecols = [2]
 	valcols = [2,3,4,5,6,7,8,9,10,11,12,13,14]
-	parser_train = Parser("AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_train)
-	parser_test = Parser("AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_test)
+	parser_train = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_train)
+	parser_test = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_test)
 	contours = 6
 	
 	properties = parser_train.getProperties()
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 			if ind_attr == dep_attr:
 				continue
 			for w in weightFactors:
-				updater = Updater(parser_train, ind_attr, contours, dep_attr, w, parser_test=parser_test)
+				updater = Updater(parser_train, ind_attr, contours, dep_attr, w, parser_test=parser_test, prefix="ods/")
 				plotThings(updater)
 				updater.update(2001)
 				plotThings(updater)

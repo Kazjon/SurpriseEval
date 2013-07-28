@@ -8,13 +8,13 @@ from DU import DistanceUncertainty
 from joblib import Parallel, delayed
 import time, pickle, os, inspect, sys, types
 
-def updateBins(value, sorted_ind_list, sorted_dep_list, new_sorted_ind_list, weightFunction, findBins, findNewBins, findResults, weightFactor, bins, old_weights, indecies):
-	indecies.sort()
+def updateBins(value, sorted_ind_list, sorted_dep_list, new_sorted_ind_list, weightFunction, findBins, findNewBins, findResults, weightFactor, bins, old_weights, indices):
+	indices.sort()
 	if len(old_weights) == 0:
 		return findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, findResults)
 	else:
 		return findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, findResults)
-		#return findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indecies, old_weights, findResults)
+		#return findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indices, old_weights, findResults)
 
 # function to find the bin boundaries for a given value)
 def findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, findResults):
@@ -27,13 +27,13 @@ def findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFact
 		results.append(findResults(b, weights, sorted_dep_list))
 	return results, weights
 
-def findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indecies, old_weights, findResults):
+def findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indices, old_weights, findResults):
 	new_weights = weightFunction(value, new_sorted_ind_list, weightFactor).tolist()
 	if value == 1996:
-		print indecies
+		print indices
 		print new_weights
 		print old_weights
-	for i in indecies:
+	for i in indices:
 		nextWeight = new_weights.pop(0)
 		if i == 0:
 			toInsert = nextWeight
@@ -114,8 +114,8 @@ class ObservedDistribution:
 		orderedPoints.sort()
 		self.sorted_dep_list, self.sorted_ind_list = zip(*orderedPoints)
 		if not ind_val is None:
-			new_indecies = [i for i in range(len(orderedPoints)) if self.sorted_ind_list[i] == ind_val]
-			return new_indecies
+			new_indices = [i for i in range(len(orderedPoints)) if self.sorted_ind_list[i] == ind_val]
+			return new_indices
 	
 	def retrain(self, parser, ind_attr, dep_attr):
 		self.bins = [0.5]
@@ -297,6 +297,7 @@ def getFileName(ind_attr, contours, dep_attr, w):
 	filename = ind_attr+' '+str(contours)+' '+dep_attr+' '+str(w)+'.od'
 	return filename.replace(' ','_')
 
+#This main function has not been maintained and is probably crashy and unreliable, it's here for legacy only.
 if __name__ == "__main__":
 	weightFactors = [0.15]
 	

@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import numpy as np
 import scipy as sp
 import matplotlib as mpl
@@ -9,22 +9,13 @@ from matplotlib.collections import LineCollection
 class ExpectedDistributionVisualiser:
 	
 	#Create a new EDV object, passing it the meshing resolution on the X and Y axes, which are used for plotting.
-	def __init__(self, ED, OD, surprise, xres=100, yres=100):
+	def __init__(self, ED, OD, surprise, xres=100, yres=100, prefix="plots/"):
 		self.ED = ED
 		self.OD = OD
 		self.surprise = surprise
 		self.xres = xres
 		self.yres = yres
-	
-	#Plot the data the contours are based off of
-	def plotGreenDots(self, projection = [0,0], plot=None, alpha=1):
-		if plot is None:
-			plot = pl.figure().add_subplot(1,1,1)
-		self.setLimits(xprojection=projection)
-		self.labelAxes(plot)
-		for b in self.ED.dep:
-			plot.scatter(self.ED.ind, self.OD.unscalePoints(self.ED.dep[b]), alpha=alpha)
-		return plot
+		self.prefix = ""
 
 	#Plot the contours of the expected distribution in the space defined by the dependent and independent variables.
 			#projection: a tuple for how far to the left and right of the plot to extend.
@@ -203,6 +194,6 @@ class ExpectedDistributionVisualiser:
 	
 	#Save the current plot to a given filename.
 	def save(self,filename,printConfirmation=True):
-		pl.savefig(filename)
+		pl.savefig(os.path.join(prefix,filename))
 		if printConfirmation:
 			print 'Saved',filename

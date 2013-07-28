@@ -4,6 +4,7 @@ from ED import ExpectedDistribution
 from EDV import ExpectedDistributionVisualiser
 from U import Updater
 from matplotlib import pyplot as pl
+import matplotlib as mpl
 import scipy.interpolate as interp
 import pickle
 import os
@@ -11,18 +12,21 @@ from joblib import Parallel, delayed
 
 class Surprise:
 	
-	def __init__(self, updater=None, ed=None, params={'C':1,'gamma':0.01}, prefix = ""):
+	def __init__(self, updater=None, ed=None, params={'C':1,'gamma':0.01}, xlims=None, ylims=None, spprefix = "sps/", plotprefix="plots/"):
 		self.params = params
 		self.updater = updater
-		self.prefix = prefix
+		self.spprefix = spprefix
+		self.plotprefix = plotprefix
 		self.ed = ed
 		self.edv = None
+		self.xlims = None
+		self.ylims = None
 		self.prevFunctions = {}
 		if ed is None:
 			self.ed = ExpectedDistribution(self.updater, self.params)
 			
 	def createVisualiser(self, xres=100, yres=100):
-		self.edv = ExpectedDistributionVisualiser(self.ed, self.updater, self, xres, yres)
+		self.edv = ExpectedDistributionVisualiser(self.ed, self.updater, self, xres, yres, self.plotprefix)
 		return self.edv
 	
 	def filename(self, index=-1):
@@ -30,7 +34,7 @@ class Surprise:
 		if index == -1:
 			indexString = ""
 		filename = self.updater.ind_attr+' '+self.updater.dep_attr+indexString+'.sp'
-		return os.path.join(self.prefix,filename.replace(' ','_'))
+		return os.path.join(self.spprefix,filename.replace(' ','_'))
 	
 	def saveList(self, surprise_list, index=-1, remove=-1):
 		filename = self.filename(index)
@@ -109,9 +113,15 @@ class Surprise:
 		fig.set_ylabel(self.updater.depAttrName())
 		ind_buffer = (max(ind_vals) - min(ind_vals))*.05
 		dep_buffer = (max(dep_vals) - min(dep_vals))*.05
-		fig.set_xlim(min(ind_vals)-ind_buffer, max(ind_vals)+ind_buffer)
-		fig.set_ylim(min(dep_vals)-dep_buffer, max(dep_vals)+dep_buffer)
-		self.updater.save(filename)
+		if self.xlims = None:
+			fig.set_xlim(min(ind_vals)-ind_buffer, max(ind_vals)+ind_buffer)
+		else:
+			fig.set_xlim(self.xlims[0],self.xlims[1])
+		if self.ylims = None:
+			fig.set_ylim(min(dep_vals)-dep_buffer, max(dep_vals)+dep_buffer)
+		else:
+			fig.set_ylim(self.ylims[0],self.ylims[1])
+		self.updater.save(os.path.join(self.plotprefix,filename)
 
 	def surpriseFunction(self, indval):
 		if self.prevFunctions.get(indval, False):
@@ -210,6 +220,8 @@ class Surprise:
 		return plot
 
 if __name__ == "__main__":
+	mpl.rc('figure',figsize=[16, 12]) 
+	mpl.rc('figure.subplot',left=0.05,right=0.995,top=0.995,bottom=0.05)
 	weightFactors = [.15]
 	
 	condition_train = lambda inst: inst.time < 1991.4
@@ -229,12 +241,12 @@ if __name__ == "__main__":
 	
 	properties = parser_train.getProperties()
 	for ind_attr in [properties[0]]:
-		for dep_attr in ['Display Diagonal (in)']:
+		for dep_attr in ['Depth (mm)']:
 			if ind_attr == dep_attr:
 				continue
-			updater = Updater(parser_train, ind_attr, contours, dep_attr, .3, parser_test=parser_test)
-			surprise = Surprise(updater, params={'C':10,'gamma':0.03})
-			edv = surprise.createVisualiser()
+			updater = Updater(parser_train, ind_attr, contours, dep_attr, .15, parser_test=parser_test)
+			surprise = Surprise(updater, params={'C':1,'gamma':0.01})
+			edv = surprise.createVisualiser(250,250)
 			surprise_list = surprise.surpriseList(plotAtUpdate=True)
 			test_list = updater.getList(False)
 			print 'least', surprise_list[0:number_to_print]
