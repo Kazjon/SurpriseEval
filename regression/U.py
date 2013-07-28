@@ -7,8 +7,8 @@ from joblib import Parallel, delayed
 
 class Updater(ObservedDistribution):
 	
-	def __init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio=1, parser_test=None, retrain=True, prefix='ods/'):
-		ObservedDistribution.__init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio, retrain, prefix)
+	def __init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio=1, parser_test=None, retrain=True, prefix=None):
+		ObservedDistribution.__init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio, retrain, prefix, save=False)
 		self.addTestData(parser_test)
 	
 	def addTestData(self, parser_test):

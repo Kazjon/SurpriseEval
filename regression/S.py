@@ -19,8 +19,8 @@ class Surprise:
 		self.plotprefix = plotprefix
 		self.ed = ed
 		self.edv = None
-		self.xlims = None
-		self.ylims = None
+		self.xlims = xlims
+		self.ylims = ylims
 		self.prevFunctions = {}
 		if ed is None:
 			self.ed = ExpectedDistribution(self.updater, self.params)
@@ -123,7 +123,7 @@ class Surprise:
 			fig.set_ylim(min(dep_vals)-dep_buffer, max(dep_vals)+dep_buffer)
 		else:
 			fig.set_ylim(self.ylims[0],self.ylims[1])
-		self.updater.save(os.path.join(self.plotprefix,filename))
+		self.updater.saveFig(os.path.join(self.plotprefix,filename))
 
 	def surpriseFunction(self, indval):
 		if self.prevFunctions.get(indval, False):
@@ -246,8 +246,7 @@ if __name__ == "__main__":
 		for dep_attr in ['Depth (mm)']:
 			if ind_attr == dep_attr:
 				continue
-			odpath = "ods/"+ind_attr.replace(" ","_").replace("(","").replace(")","")
-			updater = Updater(parser_train, ind_attr, contours, dep_attr, .15, parser_test=parser_test,path=odpath, save=False)
+			updater = Updater(parser_train, ind_attr, contours, dep_attr, .15, parser_test=parser_test)
 			surprise = Surprise(updater, params={'C':1,'gamma':0.01})
 			edv = surprise.createVisualiser(250,250)
 			surprise_list = surprise.runUpdaterAndCalcSurprise(recompute=True, plotAtUpdate=True)

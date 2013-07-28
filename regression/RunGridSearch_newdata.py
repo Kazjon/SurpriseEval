@@ -13,8 +13,9 @@ import time
 from elementtree.SimpleXMLWriter import XMLWriter
 
 
-def plotAndSave(od,ed, fn):
-	edv = ExpectedDistributionVisualiser(ed,od,s,50,50)
+def plotAndSave(od,ed,fn):
+	surprise = Surprise(od)
+	edv = surprise.createVisualiser(50,50)
 	#fig=edv.plotSurpriseGradient()
 	fig = od.plotArtefacts(stroke='black',fill='black')
 	edv.plotExpectationContours(plot=fig,showDU=True,showMU=True)
@@ -88,7 +89,6 @@ if __name__ == "__main__":
 					if (val1,val2) not in found.keys():
 						writer.start("model",ind=val1,dep=val2)
 						od = ObservedDistribution(parser, val1, contours, val2, None, retrain=True)
-						continue
 						ed = GridSearchED(od,{'C':Cs[val1],'gamma':gammas[val1]},grid={'gamma':[0.01, 0.033, 0.1, 0.33, 1, 3, 10, 33, 100],'C':[0.1, 1, 10]},parallel=True, log=writer)
 						fn = os.path.join(prefix,"".join(['-'.join([val1,val2,str(od.weight_std_ratio),str(ed.params[0.5]['C']),str(ed.params[0.5]['gamma']),'.pdf'])]))
 						plotAndSave(od,ed,fn)

@@ -283,14 +283,14 @@ class ObservedDistribution:
 		pl.show()
 	
 	#Save the current plot to a given filename.
-	def save(self,filename):
+	def saveFig(self,filename):
 		#if os.path.isfile(self.prefix+'/'+filename):
 		#	version = 1
 		#	while os.path.isfile(self.prefix+'/'+str(version)+'_'+filename):
 		#		version += 1
 		#	filename = str(version)+'_'+filename
-		pl.savefig(self.prefix+'/'+filename)
-		print 'Saved',self.prefix+'/'+filename
+		pl.savefig(filename)
+		print 'Saved',filename
 	
 	def saveObject(self, filename):
 		with open(filename, 'wb') as output:
