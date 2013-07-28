@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 import time
 
 if __name__ == "__main__":
-	mpl.rc('figure',figsize=[12, 8]) 
+	mpl.rc('figure',figsize=[9, 6]) 
 	mpl.rc('figure.subplot',left=0.05,right=0.995,top=0.995,bottom=0.05)
 	contours = 4
 	
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 	defaults = {'C': 10,'gamma': 0.1}
 	
 	val1 = ['Release Year']
-	val2 = ['ROM Capacity (Mb)']
+	val2 = ['Display Diagonal (in)']
 	
 	for v1 in val1:
 		for v2 in val2:
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 					ed = ExpectedDistribution(od,found[(v1,v2)])
 				else:
 					ed = ExpectedDistribution(od,defaults)
-				edv = ExpectedDistributionVisualiser(ed,od,100,20)
+				edv = ExpectedDistributionVisualiser(ed,od,50,20)
 				#fig=edv.plotSurpriseGradient()
 				fig = od.plotArtefacts(stroke='black',fill='white')
 				#od.plotObservedContours(plot=fig)

@@ -14,7 +14,7 @@ from elementtree.SimpleXMLWriter import XMLWriter
 
 
 def plotAndSave(od,ed,fn):
-	surprise = Surprise(od)
+	surprise = Surprise(od, plotprefix="")
 	edv = surprise.createVisualiser(50,50)
 	#fig=edv.plotSurpriseGradient()
 	fig = od.plotArtefacts(stroke='black',fill='black')
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 					else:
 						od = ObservedDistribution(parser, val1, contours, val2, None, prefix=odpath, retrain=True)
 						ed = ExpectedDistribution(od,found[(val1,val2)])
-						fn = os.path.join(prefix,"".join(['-'.join([val1,val2,str(od.weight_std_ratio),str(ed.params[0.5]['C']),str(ed.params[0.5]['gamma']),'.pdf'])]))
+						fn = os.path.join(prefix,"".join(['-'.join([val1,val2,str(od.weight_std_ratio),str(ed.params[0.5]['C']),str(ed.params[0.5]['gamma'])])+'.pdf']))
 						plotAndSave(od,ed,fn)
 					print time.time() - start_time, "seconds"
 		writer.close(rootnode)

@@ -47,7 +47,7 @@ class ExpectedDistribution:
 		for i,model in enumerate(regressors):
 			self.svr[self.OD.bins[i]] = model	
 	
-	def misclassUncertainty(self,values, ignore_eps=True):
+	def misclassUncertainty(self, values, ignore_eps=True):
 		return self.MU.misclassUncertainty(values, ignore_eps)
 		
 	# Get the bin distribution predicted by the SVR model
