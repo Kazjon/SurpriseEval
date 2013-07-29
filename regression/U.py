@@ -77,6 +77,14 @@ class Updater(ObservedDistribution):
 			plot = pl.figure().add_subplot(1,1,1)
 		plot.scatter(ind_list, dep_list, edgecolor=stroke,facecolor=fill,s=5,lw=0.25,alpha=alpha)
 		return plot
+		
+	def allLimits(self):
+		limits = self.limits()
+		ind = self.test_parser.getList(self.ind_attr, False)
+		dep = self.test_parser.getList(self.dep_attr, False)
+		limits[0] = [min(limits[0][0],min(ind)),max(limits[0][1],max(ind))]
+		limits[1] = [min(limits[1][0],min(dep)),max(limits[1][1],max(dep))]
+		return limits
 
 def plotThings(updater):
 	fig = updater.plotArtefacts()

@@ -180,7 +180,9 @@ class ObservedDistribution:
 	def distanceUncertainty(self, values):
 		return self.DU.distanceUncertainty(values)
 	
-	def indAttrName(self):
+	def indAttrName(self, san=False):
+		if san:
+			return sanitise(self.ind_attr)
 		return self.ind_attr
 	
 	def indAttr(self):
@@ -189,7 +191,9 @@ class ObservedDistribution:
 	def indAttrList(self):
 		return self.ind_list
 	
-	def depAttrName(self):
+	def depAttrName(self, san=False):
+		if san:
+			return sanitise(self.dep_attr)
 		return self.dep_attr
 	
 	def observedContours(self):
@@ -201,6 +205,9 @@ class ObservedDistribution:
 	def unscaledDepAttr(self):
 		return self.Data.getList(self.dep_attr, False)
 	
+	def limits(self):
+		return [[min(self.ind),max(self.ind)],[min(self.unscaledDepAttr()),max(self.unscaledDepAttr())]]
+		
 	# scale and unscale points trained on the scaled dots
 	def unscalePoints(self, vals):
 		return vals*np.array(self.Data.getScale(self.dep_attr))+np.array(self.Data.getTranslate(self.dep_attr))

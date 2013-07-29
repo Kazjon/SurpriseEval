@@ -7,20 +7,20 @@ from matplotlib import pyplot as pl
 import matplotlib as mpl
 import scipy.interpolate as interp
 import pickle
-import os
+import os,subprocess
 from joblib import Parallel, delayed
 
 class Surprise:
 	
-	def __init__(self, updater=None, ed=None, params={'C':1,'gamma':0.01}, xlims=None, ylims=None, spprefix = "sps/", plotprefix="plots/"):
+	def __init__(self, updater=None, ed=None, params={'C':1,'gamma':0.01}, lims=None, spprefix = "sps/", plotprefix="plots/"):
 		self.params = params
 		self.updater = updater
 		self.spprefix = spprefix
 		self.plotprefix = plotprefix
 		self.ed = ed
 		self.edv = None
-		self.xlims = xlims
-		self.ylims = ylims
+		self.xlims = lims[0]
+		self.ylims = lims[1]
 		self.prevFunctions = {}
 		if ed is None:
 			self.ed = ExpectedDistribution(self.updater, self.params)
@@ -53,7 +53,7 @@ class Surprise:
 		else:
 			return None
 	
-	def runUpdaterAndCalcSurprise(self, recompute=False, update=True, plotAtUpdate=False):
+	def runUpdaterAndCalcSurprise(self, recompute=False, catchUp=True, update=True, plotAtUpdate=False):
 		if self.edv is None:
 			self.createVisualiser()
 		surprise_list = self.readList()
@@ -62,10 +62,11 @@ class Surprise:
 			max_ind = max(self.updater.indAttrList())
 			surprise_list = []
 			# catch up
-			for start_index in range(len(test_list)):
-				find_list = self.readList(start_index)
-				if find_list:
-					break
+			if catchUp:
+				for start_index in range(len(test_list)):
+					find_list = self.readList(start_index)
+					if find_list:
+						break
 			if find_list:
 				surprise_list = find_list
 				old_index = start_index
@@ -207,7 +208,7 @@ class Surprise:
 				colors.append('red')
 			else:
 				colors.append(fill)
-		S = [max((s ** 3)*30,1) for s in s_list]
+		S = [max((s ** 4)*30,1) for s in s_list]
 		x = [s[1][0] for s in surprise_list]
 		y = [s[1][1] for s in surprise_list]
 		
@@ -222,7 +223,7 @@ class Surprise:
 		return plot
 
 if __name__ == "__main__":
-	mpl.rc('figure',figsize=[9, 6]) 
+	mpl.rc('figure',figsize=[12, 8]) 
 	mpl.rc('figure.subplot',left=0.05,right=0.995,top=0.995,bottom=0.05)
 	
 	condition_train = lambda inst: inst.time < 1991.4
@@ -242,13 +243,15 @@ if __name__ == "__main__":
 	
 	properties = parser_train.getProperties()
 	for ind_attr in [properties[0]]:
-		for dep_attr in ['Depth (mm)']:
+		for dep_attr in properties:
 			if ind_attr == dep_attr:
 				continue
 			updater = Updater(parser_train, ind_attr, contours, dep_attr, None, parser_test=parser_test)
-			surprise = Surprise(updater, params={'C':1,'gamma':0.01})
+			surprise = Surprise(updater, params={'C':1,'gamma':0.01},lims=updater.allLimits())
 			edv = surprise.createVisualiser(250,250)
-			surprise_list = surprise.runUpdaterAndCalcSurprise(recompute=True, plotAtUpdate=True)
-			test_list = updater.getList(False)
+			surprise_list = surprise.runUpdaterAndCalcSurprise(recompute=True, catchUp=False, plotAtUpdate=True)
 			print 'least', surprise_list[0:number_to_print]
 			print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]
+			fn = "plots/Surprise "+updater.indAttrName(True)+" "+updater.depAttrName(True)
+			fn = fn.replace(" ","_")
+			subprocess.call("ffmpeg -f image2 -r 5 -i "+fn+"_%05d.jpg -vcodec mpeg4 -y "+fn+".mp4",shell=True)

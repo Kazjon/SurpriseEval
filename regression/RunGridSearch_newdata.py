@@ -7,6 +7,7 @@ from ED import ExpectedDistribution
 from EDV import ExpectedDistributionVisualiser
 from OD import ObservedDistribution
 from GSED import GridSearchED
+from GE import plotGridError
 from joblib import Parallel, delayed
 from S import Surprise
 import time
@@ -17,13 +18,13 @@ def plotAndSave(od,ed,fn):
 	surprise = Surprise(od, plotprefix="")
 	edv = surprise.createVisualiser(50,50)
 	#fig=edv.plotSurpriseGradient()
-	fig = od.plotArtefacts(stroke='black',fill='black')
+	fig = od.plotArtefacts(stroke='black',fill='white')
 	edv.plotExpectationContours(plot=fig,showDU=True,showMU=True)
 	#edv.plotUncertaintyChannel(onMedian=False,plot=pl.gcf().add_subplot(14,1,14))
 	edv.save(fn)
 
 if __name__ == "__main__":
-	mpl.rc('figure',figsize=[9, 6]) 
+	mpl.rc('figure',figsize=[18, 12]) 
 	mpl.rc('figure.subplot',left=0.075,right=0.995,top=0.925,bottom=0.075)
 	contours = 4
 	
@@ -76,7 +77,8 @@ if __name__ == "__main__":
 	
 	prefix = "gridoutput/"
 	t = time.localtime(time.time())
-	with open (os.path.join(prefix,"gridlog_"+str(t[0])+'.'+str(t[1])+'.'+str(t[2])+'_'+str(t[3])+'.'+str(t[4])+'.'+str(t[5])+".xml"),'w') as f:
+	logfn = os.path.join(prefix,"gridlog_"+str(t[0])+'.'+str(t[1])+'.'+str(t[2])+'_'+str(t[3])+'.'+str(t[4])+'.'+str(t[5])+".xml"),'w')
+	with open logfn as f:
 		writer = XMLWriter(f)
 		rootnode = writer.start("root")
 		for val1 in val1s:
@@ -102,3 +104,4 @@ if __name__ == "__main__":
 						plotAndSave(od,ed,fn)
 					print time.time() - start_time, "seconds"
 		writer.close(rootnode)
+	plotGridError(logfn)
