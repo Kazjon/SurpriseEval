@@ -42,7 +42,7 @@ if __name__ == "__main__":
 					ed = ExpectedDistribution(od,found[(v1,v2)])
 				else:
 					ed = ExpectedDistribution(od,defaults)
-				edv = ExpectedDistributionVisualiser(ed,od,50,20)
+				edv = ExpectedDistributionVisualiser(ed,od,None,50,20)
 				#fig=edv.plotSurpriseGradient()
 				fig = od.plotArtefacts(stroke='black',fill='white')
 				#od.plotObservedContours(plot=fig)

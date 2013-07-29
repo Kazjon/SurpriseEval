@@ -222,9 +222,8 @@ class Surprise:
 		return plot
 
 if __name__ == "__main__":
-	mpl.rc('figure',figsize=[16, 12]) 
+	mpl.rc('figure',figsize=[9, 6]) 
 	mpl.rc('figure.subplot',left=0.05,right=0.995,top=0.995,bottom=0.05)
-	weightFactors = [.15]
 	
 	condition_train = lambda inst: inst.time < 1991.4
 	condition_test = lambda inst: True
@@ -246,7 +245,7 @@ if __name__ == "__main__":
 		for dep_attr in ['Depth (mm)']:
 			if ind_attr == dep_attr:
 				continue
-			updater = Updater(parser_train, ind_attr, contours, dep_attr, .15, parser_test=parser_test)
+			updater = Updater(parser_train, ind_attr, contours, dep_attr, None, parser_test=parser_test)
 			surprise = Surprise(updater, params={'C':1,'gamma':0.01})
 			edv = surprise.createVisualiser(250,250)
 			surprise_list = surprise.runUpdaterAndCalcSurprise(recompute=True, plotAtUpdate=True)
