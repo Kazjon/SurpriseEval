@@ -7,8 +7,8 @@ from joblib import Parallel, delayed
 
 class Updater(ObservedDistribution):
 	
-	def __init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio=1, parser_test=None, retrain=False, prefix='.'):
-		ObservedDistribution.__init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio, retrain, prefix)
+	def __init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio=1, parser_test=None, retrain=True, prefix=None):
+		ObservedDistribution.__init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio, retrain, prefix, save=False)
 		self.addTestData(parser_test)
 	
 	def addTestData(self, parser_test):
@@ -29,14 +29,14 @@ class Updater(ObservedDistribution):
 			self.Data.instances.append(inst)
 			self.test_parser.pastCalc = {}
 			self.Data.pastCalc = {}
-		indecies = self.refresh(ind_val)
-		for i in indecies:
+		indices = self.refresh(ind_val)
+		for i in indices:
 			self.weights.insert(i, np.array([]))
-		new_sorted_ind_list = [self.sorted_ind_list[i] for i in indecies]
+		new_sorted_ind_list = [self.sorted_ind_list[i] for i in indices]
 		
 		# Parallel computation:
-		results, self.weights = zip(*Parallel(n_jobs=-1)(delayed(OD.updateBins)(self.ind[i], self.sorted_ind_list, self.sorted_dep_list, new_sorted_ind_list, OD.weightFunction, OD.findBins, OD.findNewBins, OD.findResults, self.weightFactor, self.bins, self.weights[i], indecies) for i in range(len(self.ind))))
-		#print np.array(self.weights)[indecies]
+		results, self.weights = zip(*Parallel(n_jobs=-1)(delayed(OD.updateBins)(self.ind[i], self.sorted_ind_list, self.sorted_dep_list, new_sorted_ind_list, OD.weightFunction, OD.findBins, OD.findNewBins, OD.findResults, self.weightFactor, self.bins, self.weights[i], indices) for i in range(len(self.ind))))
+		#print np.array(self.weights)[indices]
 		self.finishTraining(results)
 	
 	def toBeginning(self):
@@ -77,6 +77,14 @@ class Updater(ObservedDistribution):
 			plot = pl.figure().add_subplot(1,1,1)
 		plot.scatter(ind_list, dep_list, edgecolor=stroke,facecolor=fill,s=5,lw=0.25,alpha=alpha)
 		return plot
+		
+	def allLimits(self):
+		limits = self.limits()
+		ind = self.test_parser.getList(self.ind_attr, False)
+		dep = self.test_parser.getList(self.dep_attr, False)
+		limits[0] = [min(limits[0][0],min(ind)),max(limits[0][1],max(ind))]
+		limits[1] = [min(limits[1][0],min(dep)),max(limits[1][1],max(dep))]
+		return limits
 
 def plotThings(updater):
 	fig = updater.plotArtefacts()
@@ -93,8 +101,8 @@ if __name__ == "__main__":
 	namecols = [0]
 	timecols = [2]
 	valcols = [2,3,4,5,6,7,8,9,10,11,12,13,14]
-	parser_train = Parser("AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_train)
-	parser_test = Parser("AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_test)
+	parser_train = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_train)
+	parser_test = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_test)
 	contours = 6
 	
 	properties = parser_train.getProperties()
@@ -103,7 +111,7 @@ if __name__ == "__main__":
 			if ind_attr == dep_attr:
 				continue
 			for w in weightFactors:
-				updater = Updater(parser_train, ind_attr, contours, dep_attr, w, parser_test=parser_test)
+				updater = Updater(parser_train, ind_attr, contours, dep_attr, w, parser_test=parser_test, prefix="ods/")
 				plotThings(updater)
 				updater.update(2001)
 				plotThings(updater)

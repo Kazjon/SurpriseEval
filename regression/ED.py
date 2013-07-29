@@ -38,20 +38,20 @@ class ExpectedDistribution:
 	def train(self):
 		regressors = []
 		if self.parallel:
-			regressors = Parallel(n_jobs=-1)(delayed(trainBin)(self.params[b], np.array([self.ind]).T, self.dep[b]) for b in self.OD.bins)
+			regressors = Parallel(n_jobs=-1)(delayed(trainBin)(self.params[b], np.atleast_2d(self.ind).T, self.dep[b]) for b in self.OD.bins)
 		else:
 			for b in self.OD.bins:
-				regressors.append(trainBin(self.params[b],np.array([self.ind]).T, self.dep[b]))
+				regressors.append(trainBin(self.params[b],np.atleast_2d(self.ind).T, self.dep[b]))
 				#self.svr[b] = SVR(cache_size=1000,kernel='rbf', C=self.params[b]['C'], gamma=self.params[b]['gamma'])
 				#self.svr[b].fit(np.array([self.ind]).T,self.dep[b])
 		for i,model in enumerate(regressors):
 			self.svr[self.OD.bins[i]] = model	
 	
-	def misclassUncertainty(self,values, ignore_eps=False):
+	def misclassUncertainty(self, values, ignore_eps=True):
 		return self.MU.misclassUncertainty(values, ignore_eps)
 		
 	# Get the bin distribution predicted by the SVR model
-	def getExpectationsAt(self, vals, returnScaled=True, medianOnly=False,):
+	def getExpectationsAt(self, vals, returnScaled=True, medianOnly=False):
 		if medianOnly:
 			results = self.svr[0.5].predict(vals)
 			if not returnScaled:
@@ -88,6 +88,7 @@ class ExpectedDistribution:
 	def getParams(self):
 		return self.svr[0.5].get_params() 
 	
+	'''SurpriseCalc has been moved to S.py and split up
 	#surpriseCalc only works on a single (x,y) pair.
 	def surpriseCalc(self,indval,depval,fig=None,dep_scaled=True, returnFunction=False, alpha=1, ignore_eps = False):
 		#Unlike most of these functions, surpriseCalc only works on a single (x,y) pair.
@@ -141,7 +142,9 @@ class ExpectedDistribution:
 			fig.set_ylabel("Surprise (ignore sign)")
 			#print 'Surprisingness = ',round(surprise,3),', raw = ',abs(round(raw_surprise,3))
 		return surprise,raw_surprise
-		
+	'''
+	
+#This main function has not been maintained and is probably crashy and unreliable, it's here for legacy only.
 if __name__ == "__main__":
 	mpl.rc('figure',figsize=[9, 6]) 
 	mpl.rc('figure.subplot',left=0.05,right=0.995,top=0.995,bottom=0.05)

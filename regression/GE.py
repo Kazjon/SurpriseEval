@@ -74,7 +74,16 @@ def plotResults(m, show=False, prefix=""):
 	else:
 		pl.savefig(os.path.join(prefix,m.X+'-'+m.Y+'.png'))
 
-if __name__ == '__main__':
-	models = convertXML(sys.argv[1])
+def plotGridErrors(logfn, outprefix="griderrors"):
+	models = convertXML(logfn)
 	for m in models:
-		plotResults(m,prefix="gridplots_newmu")
+		plotResults(m,prefix=outprefix)
+
+if __name__ == '__main__':
+	if len(sys.argv<2):
+		print "Usage: python IV.py <log.xml> <folder in which to put plots (defaults to \"gridplots/\")>"
+	if len(sys.argv)<4:
+		prefix = "griderrors"
+	else:
+		prefix = sys.argv[2]
+	investigate(sys.argv[1],prefix)

@@ -1,5 +1,5 @@
 import numpy as np
-import sys, csv
+import sys, csv,os
 from I import Instance
 
 class Parser:

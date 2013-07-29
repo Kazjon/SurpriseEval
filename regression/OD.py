@@ -6,15 +6,15 @@ from matplotlib import pyplot as pl
 from P import Parser
 from DU import DistanceUncertainty
 from joblib import Parallel, delayed
-import time, pickle, os, inspect, sys, types
+import time, pickle, os, inspect, sys, types, re
 
-def updateBins(value, sorted_ind_list, sorted_dep_list, new_sorted_ind_list, weightFunction, findBins, findNewBins, findResults, weightFactor, bins, old_weights, indecies):
-	indecies.sort()
+def updateBins(value, sorted_ind_list, sorted_dep_list, new_sorted_ind_list, weightFunction, findBins, findNewBins, findResults, weightFactor, bins, old_weights, indices):
+	indices.sort()
 	if len(old_weights) == 0:
 		return findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, findResults)
 	else:
 		return findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, findResults)
-		#return findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indecies, old_weights, findResults)
+		#return findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indices, old_weights, findResults)
 
 # function to find the bin boundaries for a given value)
 def findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, findResults):
@@ -27,13 +27,13 @@ def findBins(value, sorted_ind_list, sorted_dep_list, weightFunction, weightFact
 		results.append(findResults(b, weights, sorted_dep_list))
 	return results, weights
 
-def findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indecies, old_weights, findResults):
+def findNewBins(value, new_sorted_ind_list, sorted_dep_list, weightFunction, weightFactor, bins, indices, old_weights, findResults):
 	new_weights = weightFunction(value, new_sorted_ind_list, weightFactor).tolist()
 	if value == 1996:
-		print indecies
+		print indices
 		print new_weights
 		print old_weights
-	for i in indecies:
+	for i in indices:
 		nextWeight = new_weights.pop(0)
 		if i == 0:
 			toInsert = nextWeight
@@ -64,18 +64,25 @@ def findResults(bin_number, weights, sorted_dep_list):
 def weightFunction(value, comparisonList, weightFactor):
 	return np.exp(weightFactor*(-(abs(np.array(comparisonList)-value) ** 2)))
 
+def sanitise(str):
+	return str.replace(" ","_").replace("(","").replace(")","")
 class ObservedDistribution:
 
-	def __init__(self, parser, ind_attr, contours , dep_attr, weight_std_ratio=None, retrain=False, prefix='.'):
+	def __init__(self, parser, ind_attr, contours , dep_attr, weight_std_ratio=None, retrain=False, prefix=None, save=True):
+		#If a None path is provided, make one based on the ind_attr
+		if prefix is None:
+			prefix = "ods/"+sanitise(ind_attr)+"/"
+			if not os.path.exists(prefix):
+				os.makedirs(prefix)
 		# If no weight is provided then expect to find one in a filename
 		if weight_std_ratio is None:
-			namestart = ind_attr+' '+str(contours)+' '+dep_attr+' '
-			namestart = namestart.replace(" ","_")
+			pattern = re.compile(sanitise(ind_attr)+'_[0-9]_'+sanitise(dep_attr))
 			for f in os.listdir(prefix):
 				fn,ext = os.path.splitext(f)
-				if ext == ".od" and fn.startswith(namestart):
-					weight_std_ratio = float(fn.strip(namestart))
+				if ext == ".od" and pattern.match(sanitise(fn)) is not None:
+					weight_std_ratio = float(fn.rsplit("_")[-1])
 					print "Found",f,"and setting weight ratio to",weight_std_ratio
+					break
 		if weight_std_ratio is None:
 			print "No suitable weight factor found in provided OD files, using 0.15."
 			weight_std_ratio = 0.15
@@ -94,7 +101,7 @@ class ObservedDistribution:
 			print "read in",self.path
 		# otherwise build the od as normal
 		else:
-			self.retrain(parser, ind_attr, dep_attr)
+			self.retrain(parser, ind_attr, dep_attr, save=save)
 	
 	def refresh(self, ind_val=None):
 		# set attributes
@@ -114,10 +121,10 @@ class ObservedDistribution:
 		orderedPoints.sort()
 		self.sorted_dep_list, self.sorted_ind_list = zip(*orderedPoints)
 		if not ind_val is None:
-			new_indecies = [i for i in range(len(orderedPoints)) if self.sorted_ind_list[i] == ind_val]
-			return new_indecies
+			new_indices = [i for i in range(len(orderedPoints)) if self.sorted_ind_list[i] == ind_val]
+			return new_indices
 	
-	def retrain(self, parser, ind_attr, dep_attr):
+	def retrain(self, parser, ind_attr, dep_attr, save=True):
 		self.bins = [0.5]
 		# Expand the bins to the number of contours selected (zero contours = just predict the median)
 		for i in xrange(self.contours):
@@ -139,7 +146,7 @@ class ObservedDistribution:
 		
 		self.finishTraining(results)
 		
-		if not os.path.isfile(self.path):
+		if save and not os.path.isfile(self.path):
 			self.saveObject(self.path)
 	
 	def finishTraining(self, results):
@@ -173,7 +180,9 @@ class ObservedDistribution:
 	def distanceUncertainty(self, values):
 		return self.DU.distanceUncertainty(values)
 	
-	def indAttrName(self):
+	def indAttrName(self, san=False):
+		if san:
+			return sanitise(self.ind_attr)
 		return self.ind_attr
 	
 	def indAttr(self):
@@ -182,7 +191,9 @@ class ObservedDistribution:
 	def indAttrList(self):
 		return self.ind_list
 	
-	def depAttrName(self):
+	def depAttrName(self, san=False):
+		if san:
+			return sanitise(self.dep_attr)
 		return self.dep_attr
 	
 	def observedContours(self):
@@ -194,6 +205,9 @@ class ObservedDistribution:
 	def unscaledDepAttr(self):
 		return self.Data.getList(self.dep_attr, False)
 	
+	def limits(self):
+		return [[min(self.ind),max(self.ind)],[min(self.unscaledDepAttr()),max(self.unscaledDepAttr())]]
+		
 	# scale and unscale points trained on the scaled dots
 	def unscalePoints(self, vals):
 		return vals*np.array(self.Data.getScale(self.dep_attr))+np.array(self.Data.getTranslate(self.dep_attr))
@@ -276,18 +290,19 @@ class ObservedDistribution:
 		pl.show()
 	
 	#Save the current plot to a given filename.
-	def save(self,filename):
-		if os.path.isfile(self.prefix+'/'+filename):
-			version = 1
-			while os.path.isfile(self.prefix+'/'+str(version)+'_'+filename):
-				version += 1
-			filename = str(version)+'_'+filename
-		pl.savefig(self.prefix+'/'+filename)
-		print 'Saved',self.prefix+'/'+filename
+	def saveFig(self,filename):
+		#if os.path.isfile(self.prefix+'/'+filename):
+		#	version = 1
+		#	while os.path.isfile(self.prefix+'/'+str(version)+'_'+filename):
+		#		version += 1
+		#	filename = str(version)+'_'+filename
+		pl.savefig(filename)
+		print 'Saved',filename
 	
 	def saveObject(self, filename):
 		with open(filename, 'wb') as output:
 			pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+		print "Saved,",filename
 	
 def readObject(filename):
 	with open(filename, 'rb') as input:
@@ -297,6 +312,7 @@ def getFileName(ind_attr, contours, dep_attr, w):
 	filename = ind_attr+' '+str(contours)+' '+dep_attr+' '+str(w)+'.od'
 	return filename.replace(' ','_')
 
+#This main function has not been maintained and is probably crashy and unreliable, it's here for legacy only.
 if __name__ == "__main__":
 	weightFactors = [0.15]
 	
