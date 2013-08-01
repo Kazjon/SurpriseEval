@@ -2,12 +2,13 @@ import numpy as np
 from P import Parser
 from ED import ExpectedDistribution
 from EDV import ExpectedDistributionVisualiser
+from GE import Log
 from U import Updater
 from matplotlib import pyplot as pl
 import matplotlib as mpl
 import scipy.interpolate as interp
 import pickle
-import os,subprocess
+import os,subprocess, sys
 from joblib import Parallel, delayed
 
 class Surprise:
@@ -61,6 +62,7 @@ class Surprise:
 			test_list = self.updater.getList(False)
 			max_ind = max(self.updater.indAttrList())
 			surprise_list = []
+			find_list = None
 			# catch up
 			if catchUp:
 				for start_index in range(len(test_list)):
@@ -88,7 +90,7 @@ class Surprise:
 						#number_to_print = 5
 						#print 'least', surprise_list[0:number_to_print]
 						#print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]
-						fn = "Surprise "+self.updater.indAttrName()+" "+self.updater.depAttrName()+" "+count
+						fn = "Surprise "+self.updater.indAttrName(True)+" "+self.updater.depAttrName(True)+" "+count
 						fn = fn.replace(" ","_")
 						self.makePlot(fn+'.jpg', surprise_list, test_list[0:i+1])
 					print "updating",i
@@ -242,16 +244,25 @@ if __name__ == "__main__":
 	number_to_print = 5
 	
 	properties = parser_train.getProperties()
+	gridlog = Log(sys.argv[1]) 
 	for ind_attr in [properties[0]]:
-		for dep_attr in properties:
+		for dep_attr in properties[:]:
 			if ind_attr == dep_attr:
 				continue
 			updater = Updater(parser_train, ind_attr, contours, dep_attr, None, parser_test=parser_test)
-			surprise = Surprise(updater, params={'C':1,'gamma':0.01},lims=updater.allLimits())
+			surprise = None
+			params = gridlog.getBestParams(ind_attr,dep_attr)
+			if params is not None:
+				print "Found",params,"for independent:",ind_attr,"dependent:",dep_attr
+				surprise = Surprise(updater, params=params,lims=updater.allLimits([5,5]))
+			else:
+				print "Found no params in log for independent:",ind_attr,"dependent:",dep_attr,", using defaults"
+				surprise = Surprise(updater, params={'C':1,'gamma':0.01},lims=updater.allLimits([5,5]))
 			edv = surprise.createVisualiser(250,250)
 			surprise_list = surprise.runUpdaterAndCalcSurprise(recompute=True, catchUp=False, plotAtUpdate=True)
 			print 'least', surprise_list[0:number_to_print]
 			print 'most', surprise_list[-number_to_print:-1] + [surprise_list[-1]]
-			fn = "plots/Surprise "+updater.indAttrName(True)+" "+updater.depAttrName(True)
-			fn = fn.replace(" ","_")
-			subprocess.call("ffmpeg -f image2 -r 5 -i "+fn+"_%05d.jpg -vcodec mpeg4 -y "+fn+".mp4",shell=True)
+			fn = "plots/Surprise_"+updater.indAttrName(True)+"_"+updater.depAttrName(True)
+			subprocess.call("ffmpeg -b 5000 -f image2 -r 8 -i "+fn+"_%05d.jpg -vcodec libx264 -y "+fn+".mp4",shell=True)
+			parser_train = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_train)
+			parser_test = Parser("data/AllPhoneData_pruned.csv",namecols,timecols,valcols,condition_test)
