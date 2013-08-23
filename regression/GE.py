@@ -5,6 +5,21 @@ import matplotlib as mpl
 from matplotlib import pyplot as pl
 import os
 
+class Log:
+	def __init__(self,logfn):
+		self.models = convertXML(logfn)
+	
+	def plotGridErrors(self,outprefix="griderrors"):
+		for m in self.models:
+			plotResults(m,prefix=outprefix)
+	
+
+	def getBestParams(self,ind,dep):
+		for m in self.models:
+			if m.X == ind and m.Y == dep:
+				return {"C":m.best.C,"gamma":m.best.gamma}
+		return None
+
 class test:
 	def __init__(self, node):
 		self.C = float(node.get('C'))
@@ -28,6 +43,7 @@ class model:
 		for test_xml in node.findall('test'):
 			self.tests.append(test(test_xml))
 		self.tests.sort()
+		self.best = self.tests[0]
 	
 	def __repr__(self):
 		return str(self.X)+" "+str(self.Y)
@@ -74,10 +90,7 @@ def plotResults(m, show=False, prefix=""):
 	else:
 		pl.savefig(os.path.join(prefix,m.X+'-'+m.Y+'.png'))
 
-def plotGridErrors(logfn, outprefix="griderrors"):
-	models = convertXML(logfn)
-	for m in models:
-		plotResults(m,prefix=outprefix)
+
 
 if __name__ == '__main__':
 	if len(sys.argv<2):
