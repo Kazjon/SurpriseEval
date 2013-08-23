@@ -11,8 +11,8 @@ from OD import ObservedDistribution
 from joblib import Parallel, delayed
 import time
 
-def trainBin(params, ind, dep):
-	return SVR(cache_size=1000,kernel='rbf', C=params['C'], gamma=params['gamma']).fit(ind, dep)
+def trainBin(params, ind, dep, sampleWeights):
+	return SVR(cache_size=1000,kernel='rbf', C=params['C'], gamma=params['gamma']).fit(ind, dep,sample_weight=sampleWeights)
 
 def predictBin(svr, vals):
 	return svr.predict(vals)
@@ -30,6 +30,8 @@ class ExpectedDistribution:
 				self.params[b] = _paramsets
 		self.ind = self.OD.indAttr()
 		self.dep = self.OD.observedContours()
+		self.indWeights = self.OD.indQuantities
+		
 		self.svr = {}
 		if train:
 			self.train()
@@ -38,14 +40,16 @@ class ExpectedDistribution:
 	def train(self):
 		regressors = []
 		if self.parallel:
-			regressors = Parallel(n_jobs=-1)(delayed(trainBin)(self.params[b], np.atleast_2d(self.ind).T, self.dep[b]) for b in self.OD.bins)
+			regressors = Parallel(n_jobs=-1)(delayed(trainBin)(self.params[b], np.atleast_2d(self.ind).T, self.dep[b],self.indWeights) for b in self.OD.bins)
 		else:
 			for b in self.OD.bins:
-				regressors.append(trainBin(self.params[b],np.atleast_2d(self.ind).T, self.dep[b]))
+				regressors.append(trainBin(self.params[b],np.atleast_2d(self.ind).T, self.dep[b],self.indWeights))
 				#self.svr[b] = SVR(cache_size=1000,kernel='rbf', C=self.params[b]['C'], gamma=self.params[b]['gamma'])
 				#self.svr[b].fit(np.array([self.ind]).T,self.dep[b])
+				
+		
 		for i,model in enumerate(regressors):
-			self.svr[self.OD.bins[i]] = model	
+			self.svr[self.OD.bins[i]] = model
 	
 	def misclassUncertainty(self, values, ignore_eps=True):
 		return self.MU.misclassUncertainty(values, ignore_eps)

@@ -41,9 +41,12 @@ class ExpectedDistributionVisualiser:
 			DUvals = self.OD.distanceUncertainty(x)
 		if showMU:
 			MUvals = self.ED.misclassUncertainty(x)
-		scaling = 1-np.minimum(np.ones(len(x)),DUvals+MUvals)	
+		scaling = 1-np.minimum(np.ones(len(x)),DUvals+MUvals)
+		maxLW = 3
+		minLW = 0.25	
 		for i,b in enumerate(self.OD.bins):
-			alpha = 1-(abs(i-len(self.OD.bins)/2.0)/float(len(self.OD.bins)/2.0)) # Weight the colour of the contour to the distance from the median
+			alpha=1
+			#alpha = 1-(abs(i-len(self.OD.bins)/2.0)/float(len(self.OD.bins)/2.0)) # Weight the colour of the contour to the distance from the median
 			points = np.array([x[:,0], y_pred[b]]).T.reshape(-1, 1, 2) 
 			segments = np.concatenate([points[:-1], points[1:]], axis=1)
 			# create a (r,g,b,a) color description for each line segment 
@@ -55,11 +58,12 @@ class ExpectedDistributionVisualiser:
 				s0 = np.interp(x0,x[:,0],scaling) 
 				cmap.append([1-s0,0,s0,alpha])
 			# Create the line collection object, and set the color parameters. 
-			lw = 1
-			if b== 0.5:
-				lw = 3
+			distFromMedian = 2 * abs(b - 0.5)
+			lw = (1 - distFromMedian) * (maxLW-minLW)+minLW
+			#if b== 0.5:
+			#	lw = 3
 			lc = LineCollection(segments, linewidths=lw) 
-			lc.set_color(cmap) 
+			lc.set_color(cmap)
 			plot.add_collection(lc)
 		return plot
 

@@ -89,8 +89,8 @@ class ObservedDistribution:
 		self.weight_std_ratio = weight_std_ratio
 		self.contours = contours
 		self.prefix = prefix
-		filename = getFileName(ind_attr, contours, dep_attr, weight_std_ratio)
-		self.path = os.path.join(prefix,filename)
+		self.filename = getFileName(ind_attr, contours, dep_attr, weight_std_ratio)
+		self.path = os.path.join(prefix,self.filename)
 		# if this od has already been computed read in the file it was saved to and copy the attributes from that version
 		if os.path.isfile(self.path) and not retrain:
 			od = readObject(self.path)
@@ -102,6 +102,9 @@ class ObservedDistribution:
 		# otherwise build the od as normal
 		else:
 			self.retrain(parser, ind_attr, dep_attr, save=save)
+			
+	def __repr__(self):
+		return self.filename
 	
 	def refresh(self, ind_val=None):
 		# set attributes
@@ -111,6 +114,7 @@ class ObservedDistribution:
 		self.ind = list(set(self.ind_list))
 		self.listToContours = [self.ind.index(i) for i in self.ind_list]
 		self.DU = DistanceUncertainty(self)
+		self.indQuantities = [self.ind_list.count(i) for i in self.ind]
 		
 		# Variables
 		self.std = np.std(self.ind_list)
@@ -173,8 +177,11 @@ class ObservedDistribution:
 				print "Avoiding a crash in the SVR by falsely editing the first datapoint by 1% and then proceeding."
 	
 	# function to find the weights for each point around a single point on the independent axis
-	def weightFunction(self, value):
-		return np.exp(self.weightFactor*(-(abs(np.array(self.ind_list)-value) ** 2)))
+	def weightFunction(self, value, weightFactor=None):
+		wf = self.weightFactor
+		if weightFactor is not None:
+			wf = 1.0 / (2 * ((weightFactor * self.std) ** 2))
+		return np.exp(wf*(-(abs(np.array(self.ind_list)-value) ** 2)))
 	
 	# getter functions
 	def distanceUncertainty(self, values):
@@ -190,6 +197,7 @@ class ObservedDistribution:
 	
 	def indAttrList(self):
 		return self.ind_list
+		
 	
 	def depAttrName(self, san=False):
 		if san:
@@ -218,7 +226,7 @@ class ObservedDistribution:
 	def plotArtefacts(self,stroke=None,fill='black',plot=None,alpha=1):
 		if plot is None:
 			plot = pl.figure().add_subplot(1,1,1)
-		plot.scatter(self.ind_list, self.unscalePoints(self.dep_list), edgecolor=stroke,facecolor=fill,s=5,lw=0.25,alpha=alpha)
+		plot.scatter(self.ind_list, self.unscalePoints(self.dep_list), edgecolor=stroke,facecolor=fill,s=2,lw=0.25,alpha=alpha)
 		return plot
 
 	def plotArtefact(self,x=None,y=None,plot=None,alpha=1,ED=None):
@@ -266,6 +274,10 @@ class ObservedDistribution:
 			x, y = zip(*zipped)
 			list(x)
 			list(y)
+			#if b == 0.5:
+			#	print x
+			#	print y
+			#	sys.exit()
 			plot.plot(x, y, color=color, lw=S, alpha=alpha)
 		if self.ind_attr is None:
 			plot.set_xlabel('$Year$')
