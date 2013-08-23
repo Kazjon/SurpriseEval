@@ -13,6 +13,7 @@
 import numpy as np
 from matplotlib import pyplot as pl
 import colorsys
+from I import Instance
 
 # Strings for creating a .dot file
 splitColor = ", width=.5, height=.5, color=red"
@@ -59,10 +60,16 @@ class Visualization:
 			S = []
 			for inst in cluster.instances:
 				attributes = inst.getAttributes()
-				X.append(attributes[x])
-				Y.append(attributes[y])
+				if x in Instance.properties:
+					X.append(attributes[x])
+				else:
+					X.append(inst.time)
+				if y in Instance.properties:
+					Y.append(attributes[y])
+				else:
+					Y.append(inst.time)
 				S.append(inst.depth)
-			S = ((max(S)-np.array(S)) ** 2).tolist()
+			S = (((max(S)-np.array(S)) ** 2) * 30).tolist()
 			pl.scatter(X, Y, color=colors[i], s=S)
 		pl.xlabel(x)
 		pl.ylabel(y)

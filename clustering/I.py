@@ -8,6 +8,8 @@ class Instance:
 		self.merges = []
 		self.splits = []
 		self.depth = 0
+		self.before_delta = {}
+		self.after_delta = {}
 	
 	def __repr__(self):
 		return self.pretty_print(False)
