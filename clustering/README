@@ -1,0 +1,11 @@
+Description of Classes:
+
+N = Node
+V = Visualizer
+M = Measure
+U = Utility
+COBWEB = Cluster Functions
+P = Parser
+I = Instance
+
+Each node has all of these classes but they are in separate files to make editing them easier.
