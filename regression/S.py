@@ -20,8 +20,9 @@ class Surprise:
 		self.plotprefix = plotprefix
 		self.ed = ed
 		self.edv = None
-		self.xlims = lims[0]
-		self.ylims = lims[1]
+		if lims is not None:
+			self.xlims = lims[0]
+			self.ylims = lims[1]
 		self.prevFunctions = {}
 		if ed is None:
 			self.ed = ExpectedDistribution(self.updater, self.params)

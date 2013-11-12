@@ -9,7 +9,10 @@ class Updater(ObservedDistribution):
 	
 	def __init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio=1, parser_test=None, retrain=True, prefix=None):
 		ObservedDistribution.__init__(self, parser_train, ind_attr, contours , dep_attr, weight_std_ratio, retrain, prefix, save=False)
-		self.addTestData(parser_test)
+		if parser_test is not None:
+			self.addTestData(parser_test)
+		else:
+			self.test_parser = None
 	
 	def addTestData(self, parser_test):
 		self.test_parser = parser_test
@@ -70,22 +73,23 @@ class Updater(ObservedDistribution):
 	def plotArtefacts(self,stroke=None,fill='black',plot=None,alpha=1, trainOnly=False):
 		ind_list = self.ind_list
 		dep_list = self.unscaledDepAttr()
-		if not trainOnly:
+		if not trainOnly and self.test_parser is not None:
 			ind_list += self.test_parser.getList(self.ind_attr, False)
 			dep_list += self.test_parser.getList(self.dep_attr, False)
 		if plot is None:
 			plot = pl.figure().add_subplot(1,1,1)
-		plot.scatter(ind_list, dep_list, edgecolor=stroke,facecolor=fill,s=5,lw=0.25,alpha=alpha)
+		plot.scatter(ind_list, dep_list, edgecolor=stroke,facecolor=fill,s=2,lw=0.25,alpha=alpha)
 		return plot
 		
 	def allLimits(self, projection=[0,0]):
 		limits = self.limits()
-		ind = self.test_parser.getList(self.ind_attr, False)
-		dep = self.test_parser.getList(self.dep_attr, False)
-		indrange = max(ind) - min(ind)
-		deprange = max(dep) - min(dep)
-		limits[0] = [min(limits[0][0],min(ind)) - (0.05*indrange),max(limits[0][1],max(ind)) + (0.05*indrange)]
-		limits[1] = [min(limits[1][0],min(dep)) - (0.05*deprange),max(limits[1][1],max(dep)) + (0.05*deprange)]
+		if self.test_parser is not None:
+			ind = self.test_parser.getList(self.ind_attr, False)
+			dep = self.test_parser.getList(self.dep_attr, False)
+			indrange = max(ind) - min(ind)
+			deprange = max(dep) - min(dep)
+			limits[0] = [min(limits[0][0],min(ind)) - (0.05*indrange),max(limits[0][1],max(ind)) + (0.05*indrange)]
+			limits[1] = [min(limits[1][0],min(dep)) - (0.05*deprange),max(limits[1][1],max(dep)) + (0.05*deprange)]
 		return limits
 
 def plotThings(updater):

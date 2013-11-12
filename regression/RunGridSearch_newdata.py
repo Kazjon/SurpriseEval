@@ -7,7 +7,7 @@ from ED import ExpectedDistribution
 from EDV import ExpectedDistributionVisualiser
 from OD import ObservedDistribution
 from GSED import GridSearchED
-from GE import plotGridError
+from GE import Log
 from joblib import Parallel, delayed
 from S import Surprise
 import time
@@ -26,7 +26,7 @@ def plotAndSave(od,ed,fn):
 if __name__ == "__main__":
 	mpl.rc('figure',figsize=[18, 12]) 
 	mpl.rc('figure.subplot',left=0.075,right=0.995,top=0.925,bottom=0.075)
-	contours = 4
+	contours = 3
 	
 	namecols = [0]
 	timecols = [2]
@@ -77,8 +77,8 @@ if __name__ == "__main__":
 	
 	prefix = "gridoutput/"
 	t = time.localtime(time.time())
-	logfn = os.path.join(prefix,"gridlog_"+str(t[0])+'.'+str(t[1])+'.'+str(t[2])+'_'+str(t[3])+'.'+str(t[4])+'.'+str(t[5])+".xml"),'w')
-	with open logfn as f:
+	logfn = os.path.join(prefix,"gridlog_"+str(t[0])+'.'+str(t[1])+'.'+str(t[2])+'_'+str(t[3])+'.'+str(t[4])+'.'+str(t[5])+".xml")
+	with open(logfn,'w') as f:
 		writer = XMLWriter(f)
 		rootnode = writer.start("root")
 		for val1 in val1s:
@@ -86,14 +86,20 @@ if __name__ == "__main__":
 				if val1 is not val2:
 					start_time = time.time()
 					print "Modelling",val1,"(independent) against",val2,"(dependent)."
-					od = None
 					ed = None
 					if (val1,val2) not in found.keys():
 						writer.start("model",ind=val1,dep=val2)
-						od = ObservedDistribution(parser, val1, contours, val2, None, retrain=True)
-						ed = GridSearchED(od,{'C':Cs[val1],'gamma':gammas[val1]},grid={'gamma':[0.01, 0.033, 0.1, 0.33, 1, 3, 10, 33, 100],'C':[0.1, 1, 10]},parallel=True, log=writer)
-						fn = os.path.join(prefix,"".join(['-'.join([val1,val2,str(od.weight_std_ratio),str(ed.params[0.5]['C']),str(ed.params[0.5]['gamma']),'.pdf'])]))
-						plotAndSave(od,ed,fn)
+						ods = []
+						weights = [0.4,0.3,0.2]
+						for w in weights:
+							ods.append(ObservedDistribution(parser, val1, contours, val2, w, retrain=True)) 
+						#[0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
+						#[0.01, 0.033, 0.1, 0.33, 1, 3, 10, 33, 100] 
+						#[0.01, 0.1, 1, 10, 100]
+						#[0.1,1,10]
+						ed = GridSearchED(ods,{'C':Cs[val1],'gamma':gammas[val1]},grid={'gamma':[0.1,1],'C':[3]},parallel=True, log=writer)
+						fn = os.path.join(prefix,"".join(['-'.join([val1,val2,str(ed.OD.weight_std_ratio),str(ed.params[0.5]['C']),str(ed.params[0.5]['gamma']),'.pdf'])]))
+						plotAndSave(ed.OD,ed,fn)
 						writer.end("model")
 					elif printFound==False:
 						print '--skipping as already found.'
@@ -104,4 +110,4 @@ if __name__ == "__main__":
 						plotAndSave(od,ed,fn)
 					print time.time() - start_time, "seconds"
 		writer.close(rootnode)
-	plotGridError(logfn)
+	Log(logfn).plotGridErrors()

@@ -1,4 +1,4 @@
-Model,Release Date,Release Year,RAM Capacity (Mb),ROM Capacity (Mb),CPU Clock (MHz),Display Diagonal (in),Display Width(px),Display Length(px),Width (mm),Length (mm),Depth (mm),Volume (cubic cm),Mass (grams),Pixel Density (per inch)
+Model,Release Date,Release Year,RAM Capacity (Mb),Storage (Mb),CPU Clock (MHz),Display Diagonal (in),Display Width(px),Display Length(px),Width (mm),Length (mm),Depth (mm),Volume (cubic cm),Mass (grams),Pixel Density (per inch)
 "1und1 SmartPad","7/1/2010",2010.5,256,1024,500,7,800,480,196.6,130,22,562.3,465,133.1
 "3Com Palm III","3/1/1998",1998.166667,2,2,16,3.3,160,160,81,119,18,173.5,160,67.6
 "3Com Palm IIIe","7/1/1999",1999.5,2,2,16,3.3,160,160,81,119,18,173.5,170,67.6

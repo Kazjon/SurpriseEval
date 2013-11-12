@@ -6,10 +6,13 @@ from sklearn.grid_search import IterGrid
 from ED import ExpectedDistribution
 from joblib import Parallel, delayed
 from elementtree.SimpleXMLWriter import XMLWriter
+import types,pprint
 
 def gridSquare(params,OD,verbose):
 	if verbose:
-		print '--Started',params
+		print '--Started',str(params)
+	if params.keys().count('OD'):
+		OD = params['OD']
 	ed = ExpectedDistribution(OD,params,parallel=False)
 	e = sum(ed.misclassUncertainty(OD.indAttr(),ignore_eps=True))*0.01
 	if verbose:
@@ -19,8 +22,12 @@ def gridSquare(params,OD,verbose):
 class GridSearchED(ExpectedDistribution):
 	
 	def __init__(self, _OD, _paramsets={'C':100,'gamma':0.1}, grid=[0.1,1,10], parallel = True, train=True, verbose=True, log=None):
-		ExpectedDistribution.__init__(self, _OD, _paramsets, parallel, train=False)
 		g={}
+		if type(_OD) is types.ListType:
+			ExpectedDistribution.__init__(self, _OD[0], _paramsets, parallel, train=False)
+			g['OD'] = _OD
+		else:
+			ExpectedDistribution.__init__(self, _OD, _paramsets, parallel, train=False)
 		self.verbose = verbose
 		self.log = log
 		if type(grid) is dict:
@@ -82,4 +89,8 @@ class GridSearchED(ExpectedDistribution):
 			self.log.element("best",**strparams)
 		self.svr = eds[best].svr
 		self.params = eds[best].params
+		for k in self.params.keys():
+			if 'OD' in self.params[k]:
+				del self.params[k]['OD']
+		self.OD = eds[best].OD		
 		

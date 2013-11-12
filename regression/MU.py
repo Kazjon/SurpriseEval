@@ -25,7 +25,7 @@ class MisclassUncert:
 			observed = np.zeros(len(self.bins)+1)
 			
 			#Calculate the weights at this point.
-			weights = self.OD.weightFunction(value)
+			weights = self.OD.weightFunction(value, 0.15)
 			weight_sums[i] = np.sum(weights)
 			weighted_hist = hist*weight_sums[i]
 
@@ -71,7 +71,7 @@ class MisclassUncert:
 			observedWithinEpsilon = np.zeros(len(self.bins))
 			
 			#Calculate the weights at this point.
-			weights = self.OD.weightFunction(value)
+			weights = self.OD.weightFunction(value, 0.15)
 			weight_sums[i] = np.sum(weights)
 			weighted_hist = hist*weight_sums[i]
 
