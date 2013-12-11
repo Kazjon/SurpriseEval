@@ -9,3 +9,7 @@ P = Parser
 I = Instance
 
 Each node has all of these classes but they are in separate files to make editing them easier.
+
+To train a new model, modify train.py to read the correct csv file and use the correct columns as attributes.  You will also want to modify the name of the output file that the model will be saved to.
+
+To visualize a trained model use show.py (which gives help information if you call "python show.py -h").
