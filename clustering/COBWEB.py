@@ -1,6 +1,8 @@
 from U import Utility
 
 class COBWEB:
+	fileNumber = 0
+	
 	def __init__(self, tree):
 		self.tree = tree
 		self.utility = tree.utility
@@ -39,7 +41,7 @@ class COBWEB:
 		children_cu = []
 		for i in range(len(self.tree.children)):
 			self.tree.children[i].utility.increment_counts(instance)
-			children_cu.append((self.utility.category_utility(),i))
+			children_cu.append((self.utility.category_utility(self.tree.children[i]),i))
 			self.tree.children[i].utility.decrement_counts(instance)
 		self.utility.decrement_counts(instance)
 		children_cu.sort(reverse=True)
@@ -123,6 +125,7 @@ class COBWEB:
 			new_c.children.append(second_c)
 			second_c.parent = new_c
 			self.tree.mergedNodes.append([first_c, second_c])
+			self.tree.splitMergeOrder.append("m")
 			for m in self.tree.mergedNodes:
 				if len(m) > 2 and first_c in m and second_c in m:
 					m.remove(first_c)
@@ -162,6 +165,7 @@ class COBWEB:
 			self.tree.children.insert(best,best_c)
 		else:
 			self.tree.splitNodes.append(best_c.children)
+			self.tree.splitMergeOrder.append("s")
 			for child in best_c.children:
 				child.parent = self.tree
 			for m in self.tree.mergedNodes:
@@ -260,11 +264,11 @@ class COBWEB:
 		
 		return best
 	
-	def firstCobweb(self, instance):
+	def firstCobweb(self, instance, display=False):
 		Utility.updatedNodes = []
-		self.cobweb(instance)
+		self.cobweb(instance, display)
 	
-	def cobweb(self, instance):
+	def cobweb(self, instance, display=False):
 		"""
 		Incrementally integrates an instance into the categorization tree
 		defined by the current node. This function operates recursively to
@@ -278,6 +282,10 @@ class COBWEB:
 			self.create_child_with_current_counts()
 			self.utility.increment_counts(instance)
 			self.create_new_child(instance)
+			if display:
+				# print status
+				self.tree.root.viz.toDot(str(COBWEB.fileNumber)+'.dot', latest=instance)
+				COBWEB.fileNumber += 1
 			
 		else:
 			best1, best2 = self.two_best_children(instance)
@@ -290,7 +298,14 @@ class COBWEB:
 			if len(self.tree.children[best1[1]].children) and not self.tree.children[best1[1]].children in self.tree.splitNodes:
 				operations.append((self.cu_for_split(best1[1]),'split'))
 			operations.sort(reverse=True)
-
+			
+			if display:
+				# print status
+				self.tree.instances.append(instance)
+				self.tree.root.viz.toDot(str(COBWEB.fileNumber)+'.dot', latest=instance)
+				COBWEB.fileNumber += 1
+				self.tree.instances.pop()
+			
 			best_action = operations[0][1]
 			action_cu = operations[0][0]
 			if action_cu == 0.0:

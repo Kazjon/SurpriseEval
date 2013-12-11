@@ -26,13 +26,15 @@ from M import Measure
 class Node:
 	mergedNodes = []
 	splitNodes = []
+	splitMergeOrder = []
+	util_values = {}
 
-	def __init__(self, root=None, parent=None, concept_tree=None, filename=None):
+	def __init__(self, root=None, parent=None, concept_tree=None, filename=None, directory="."):
 		"""
 		The constructor.
 		"""
 		self.instances = []
-		self.viz = Visualization(self)
+		self.viz = Visualization(self, directory)
 		self.measure = Measure(self)
 		self.filename = filename
 		self.old_count = 0
@@ -44,12 +46,12 @@ class Node:
 		self.parent = parent
 		# check if the constructor is being used as a copy constructor
 		if concept_tree:
-			self.utility = copy.deepcopy(concept_tree.utility)
-			self.utility.tree = self
+			self.utility = Utility(self, concept_tree.utility)
 			self.children = copy.deepcopy(concept_tree.children)
 			for c in self.children:
 				c.parent = self
-			self.instances = copy.deepcopy(concept_tree.instances)
+			for inst in concept_tree.instances:
+				self.instances.append(inst)
 		else:
 			self.utility = Utility(self)
 			self.children = []
@@ -66,10 +68,25 @@ class Node:
 			os.remove(remove)
 		print "Saved", filename
 	
-	def firstCobweb(self, instance):
+	def firstCobweb(self, instance, display=False):
 		Node.mergedNodes = []
 		Node.splitNodes = []
-		self.CBWB.firstCobweb(instance)
+		Node.splitMergeOrder = []
+		Node.util_values = {}
+		self.CBWB.firstCobweb(instance, display)
+		# Save the original order to better understand
+		instance.save_merges_and_splits(Node.mergedNodes, Node.splitNodes, Node.splitMergeOrder)
+		# Clean up merges and splits
+		in_both = []
+		for change_list in Node.mergedNodes:
+			if change_list in Node.splitNodes:
+				in_both.append(change_list)
+		Node.splitNodes = [l for l in Node.splitNodes if not l in in_both]
+		Node.mergedNodes = [l for l in Node.mergedNodes if not l in in_both]
+		# Set instance information (to explain changes)
+		instance.surprise_num = self.measure.delta_num(instance)
+		instance.number = len(self.instances)
+		self.toDot(str(instance.number)+".dot", False, instance)
 	
 	def cobweb(self, instance):
 		self.CBWB.cobweb(instance)
@@ -77,8 +94,8 @@ class Node:
 	def pretty_print(self):
 		c.viz.pretty_print()
 	
-	def toDot(self, fileName, withStrings=True, name_of_latest=None):
-		self.viz.toDot(fileName, withStrings, name_of_latest)
+	def toDot(self, fileName, withStrings=True, latest=None):
+		self.viz.toDot(fileName, withStrings, latest)
 	
 	def __str__(self):
 		"""
@@ -99,10 +116,6 @@ def addInc(t, instance):
 	setMeasures(t, instance)
 
 def setMeasures(t, instance):
-	mergedNodes = [x for x in Node.mergedNodes if not (x in Node.splitNodes)]
-	splitNodes = [x for x in Node.splitNodes if not (x in Node.mergedNodes)]
-	instance.merges = [-1 if nodeList == [] else max([node.measure.getDepth() for node in nodeList])-1 for nodeList in mergedNodes]
-	instance.splits = [-1 if nodeList == [] else max([node.measure.getDepth() for node in nodeList]) for nodeList in splitNodes]
 	instance.depth = float(t.measure.getInstanceDepth(instance))
 	instance.after_delta = t.measure.delta()
 
@@ -110,15 +123,16 @@ def readObject(filename):
 	with open(filename, 'rb') as input:
 		return pickle.load(input)
 
-def findFile(namestart, parser, prefix='.'):
+def findFile(namestart, parser, prefix='.', dir_name='.'):
 	for f in os.listdir(prefix):
 		fn, ext = os.path.splitext(f)
 		if ext == ".cbwb" and fn.startswith(namestart):
 			index = int(fn.strip(namestart))
 			print "Found",f,"and setting index to", index
-			parser.index = index + 1
+			if not parser is None:
+				parser.index = index + 1
 			return readObject(prefix+'/'+f)
-	return Node()
+	return Node(directory=dir_name)
 	
 if __name__ == "__main__":
 	# Read in Data

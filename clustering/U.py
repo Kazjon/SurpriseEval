@@ -1,5 +1,5 @@
 # This is a python library of algorithms that perform concept formation written by
-# Christopher MacLellan (http://www.christopia.net).  
+# Christopher MacLellan (http://www.christopia.net).	
 # 
 # Currently only COBWEB
 # (http://axon.cs.byu.edu/~martinez/classes/678/Papers/Fisher_Cobweb.pdf) is
@@ -12,18 +12,31 @@
 
 import numpy as np
 from Instance import Instance
+import copy
 
 numerical_key = 'numerically_valued_attribute'
 class Utility:
 	updatedNodes = []
 
-	def __init__(self, tree):
+	def __init__(self, tree, constructor=None):
 		"""
 		The constructor.
 		"""
 		self.tree = tree
 		self.av_counts = {}
 		self.count = 0
+		self.sq_count = 0
+		if not constructor is None:
+			self.av_counts = copy.deepcopy(constructor.av_counts)
+			self.count = constructor.count
+			self.sq_count = constructor.sq_count
+	
+	def get_av_counts(self):
+		simple_av = {}
+		for a in self.av_counts:
+			if numerical_key in self.av_counts[a]:
+				simple_av[a] = self.av_counts[a][numerical_key][0]/self.count
+		return simple_av
 	
 	def increment_counts(self, instance):
 		"""
@@ -101,12 +114,77 @@ class Utility:
 			std /= r_std
 		return mean, std
 	
-	def category_utility(self):
-		"""
-		The category utility is a local heuristic calculation to determine if
-		the split of instances across the children increases the ability to
-		guess from the parent node. 
-		"""
+	def category_utility(self, recordToNode=None):
+		answer = self.leoski_utility_function()
+		if recordToNode:
+			self.tree.util_values[recordToNode] = answer
+		return answer
+	
+	""" Leoski Utility Functions """
+	def leoski_utility_function(self):
+		if len(self.tree.children) == 0:
+			return 0.0
+
+		category_utility = 0.0
+
+		for child in self.tree.children:
+			p_of_child = child.utility.count / self.count
+			exp_child_separation = child.utility.leoski_attribute_separation()
+			category_utility += p_of_child * exp_child_separation
+
+		# return the category utility normalized by the number of children.
+		return category_utility / (1.0 * len(self.tree.children))
+
+	def leoski_attribute_separation(self):
+		exp_count = 0.0
+		for attribute in self.av_counts:
+			for value in self.av_counts[attribute]:
+				parent_mean, parent_std = list(self.tree.parent.utility.av_counts[attribute][numerical_key]/self.tree.parent.utility.count)
+				parent_std -= parent_mean ** 2
+				child_mean, child_std = list(self.av_counts[attribute][numerical_key]/self.count)
+				child_std -= child_mean ** 2
+				if value == numerical_key:
+					mean_diff = abs(parent_mean - child_mean)
+					std_diff = parent_std - child_std
+					exp_count += (mean_diff) * (std_diff)
+				else:
+					exp_count += (child_mean)**2 - (parent_mean)**2
+		return exp_count
+	""" END: Leoski Utility Functions """
+	
+	""" STD Utility Functions """
+	def std_utility_function(self):
+		if len(self.tree.children) == 0:
+			return 0.0
+
+		category_utility = 0.0
+
+		for child in self.tree.children:
+			p_of_child = child.utility.count / self.count
+			exp_child_separation = child.utility.std_attribute_separation()
+			category_utility += p_of_child * exp_child_separation
+
+		# return the category utility normalized by the number of children.
+		return category_utility / (1.0 * len(self.tree.children))
+
+	def std_attribute_separation(self):
+		exp_count = 0.0
+		for attribute in self.av_counts:
+			for value in self.av_counts[attribute]:
+				parent_mean, parent_std = list(self.tree.parent.utility.av_counts[attribute][numerical_key]/self.tree.parent.utility.count)
+				parent_std -= parent_mean ** 2
+				child_mean, child_std = list(self.av_counts[attribute][numerical_key]/self.count)
+				child_std -= child_mean ** 2
+				if value == numerical_key:
+					std_diff = parent_std - child_std
+					exp_count += (std_diff)
+				else:
+					exp_count += (child_mean)**2 - (parent_mean)**2
+		return exp_count
+	""" END: STD Utility Functions """
+	
+	""" Mean Utility Functions """
+	def mean_utility_function(self):
 		if len(self.tree.children) == 0:
 			return 0.0
 
@@ -131,11 +209,9 @@ class Utility:
 		return exp_count
 	
 	def expected_correct_guesses(self):
-		"""
-		The number of attribute value guesses we would be expected to get
-		correct using the current concept.
-		"""
 		return self.mean_ecg()
+	
+	""" END: Mean Utility Functions """
 	
 	def __str__(self):
 		avString = "|- {"

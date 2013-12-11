@@ -49,6 +49,7 @@ class Parser:
 			stds = np.array(stds)
 			for inst in self.instances:
 				inst.attributes = ((np.array(inst.attributes)-means)/stds).tolist()
+		self.instances.sort()
 	
 	def getProperties(self):
 		return Instance.properties[0:len(Instance.properties)]
