@@ -47,12 +47,18 @@ class Parser:
 				stds.append(self.pastCalc[prop]['std'])
 			means = np.array(means)
 			stds = np.array(stds)
+			Instance.pastCalc = self.pastCalc
 			for inst in self.instances:
 				inst.attributes = ((np.array(inst.attributes)-means)/stds).tolist()
+				inst.pastCalc = self.pastCalc
 		self.instances.sort()
 	
 	def getProperties(self):
 		return Instance.properties[0:len(Instance.properties)]
+	
+	def printScaling(self):
+		for prop in Instance.properties:
+			print prop, "avg", self.pastCalc[prop]['avg'], "std", self.pastCalc[prop]['std']
 	
 	def toBeginning(self):
 		self.index = 0

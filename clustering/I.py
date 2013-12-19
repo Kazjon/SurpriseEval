@@ -2,6 +2,7 @@ import pydot, pylab, scipy.misc
 
 class Instance:
 	properties = []
+	pastCalc = {}
 	fig = None
 	
 	def __init__(self, a, t, n):
@@ -18,6 +19,8 @@ class Instance:
 		self.dot_string = ""
 		self.surprise_num = 0
 		self.dot_descriptions = []
+		self.properties = Instance.properties
+		self.pastCalc = Instance.pastCalc
 	
 	def __repr__(self):
 		return self.pretty_print(False)
@@ -28,7 +31,21 @@ class Instance:
 	def __lt__(self, inst):
 		return self.time < inst.time
 	
-	def render(self, parent=False, number=3):
+	def changes(self, numElements):
+		num_changes = 0
+		for change in self.splitMergeStory:
+			num_changes += float(self.numElementsInChange(change))/numElements
+		return num_changes
+	
+	def numElementsInChange(self, change):
+		story = change[4:-2]
+		story_list = story.split("), (")
+		num_elements = 0
+		for s in story_list:
+			num_elements += int(s.split(", ")[1])
+		return num_elements
+	
+	def render(self, mode='instance', number=3, unscale=False):
 		if self.dot_string == "":
 			return
 		# Print out the merges and splits for this node
@@ -42,16 +59,23 @@ class Instance:
 			string += self.dot_descriptions[i]['desc']
 			if number == 0:
 				number = 1000
-			if parent:
-				for j in range(number):
-					if j >= len(self.dot_descriptions[i]['parent']):
-						break
-					string += self.dot_descriptions[i]['parent'][j]+"\\n"
-			else:
-				for j in range(number):
-					if j >= len(self.dot_descriptions[i]['instance']):
-						break
-					string += self.dot_descriptions[i]['instance'][j]+"\\n"
+			for j in range(number):
+				if j >= len(self.dot_descriptions[i][mode]):
+					break
+				if unscale:
+					attribute = self.dot_descriptions[i][mode][j]
+					att_name = attribute.split(":")[0]
+					try:
+						att_num = float(attribute.split(":")[1])
+						att_num *= self.pastCalc[att_name]['std']
+						if mode == "no_compare":
+							att_num += self.pastCalc[att_name]['avg']
+						att_num = round(att_num,2)
+						string += att_name+":"+str(att_num)+"\\n"
+					except IndexError:
+						string += self.dot_descriptions[i][mode][j]+"\\n"
+				else:
+					string += self.dot_descriptions[i][mode][j]+"\\n"
 			string += dot_list[i+1]
 		dot_file = open('tmp.dot', 'w+')
 		dot_file.write(string)
@@ -106,15 +130,15 @@ class Instance:
 	
 	def getAttribute(self, a):
 		if type(a) == str:
-			return self.attributes[Instance.properties.index(a)]
+			return self.attributes[self.properties.index(a)]
 		if type(a) == int:
 			return self.attributes[a]
 	
 	def getAttributes(self):
-		if not (len(self.attributes) == len(Instance.properties)):
-			print "ERROR!: "+str(len(self.attributes))+", "+str(len(Instance.properties))
+		if not (len(self.attributes) == len(self.properties)):
+			print "ERROR!: "+str(len(self.attributes))+", "+str(len(self.properties))
 			return None
 		a = {}
-		for i in range(len(Instance.properties)):
-			a[Instance.properties[i]] = self.attributes[i]
+		for i in range(len(self.properties)):
+			a[self.properties[i]] = self.attributes[i]
 		return a

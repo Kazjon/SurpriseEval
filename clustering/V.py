@@ -30,6 +30,7 @@ descriptiveString = "\tmergeBox [label=\"Merge\" "+mergeColor+"];\n\tsplitBox [l
 
 class Visualization:
 	plotted_viz = None
+	unscale_plots = False
 	
 	def __init__(self, tree, directory="."):
 		"""
@@ -70,13 +71,14 @@ class Visualization:
 		
 		with open(filename, 'wb') as csvfile:
 			writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-			writer.writerow(['Name', 'Release Date', 'Surprise'])
+			writer.writerow(['Name', 'Release Date', 'Surprise', 'Num Merges', 'Num Splits', 'Depth', 'Description'])
 			for inst in self.tree.instances:
 				index = time_list.index(inst.time)
-				writer.writerow([inst.name, inst.time, inst.surprise_num, inst.surprise_num/surprise_list[index]])
+				writer.writerow([inst.name, inst.time, inst.surprise_num, inst.surprise_num/surprise_list[index], len(inst.merges), len(inst.splits), inst.depth, inst.splitMergeStory])
 	
 	# A line showing average surprise over time
-	def surpriseLine(self):
+	def surpriseLine(self, toPlot='Surprise'):
+		plotValues = {'Surprise':lambda x: x.surprise_num, 'Merges':lambda x: len(x.merges), 'Splits':lambda x: len(x.splits), 'Depth':lambda x:x.depth, 'Changes':lambda x, y: x.changes(y)}
 		inst_time_list = [inst.time for inst in self.tree.instances]
 		time_list = list(set(inst_time_list))
 		time_list.sort()
@@ -86,14 +88,17 @@ class Visualization:
 			numerator = 0
 			for j in range(len(self.tree.instances)):
 				if weights[j] > 0:
-					numerator += self.tree.instances[j].surprise_num * weights[j]
+					if toPlot == 'Changes':
+						numerator += plotValues[toPlot](self.tree.instances[j], j) * weights[j]
+					else:
+						numerator += plotValues[toPlot](self.tree.instances[j]) * weights[j]
 			surprise_list[i] = numerator/sum(weights)
 		
 		fig = pl.figure()
 		ax = fig.add_subplot(111)
 		self.graph = ax
 		ax.plot(time_list, surprise_list)
-		pl.ylabel('Surprise')
+		pl.ylabel(toPlot)
 		pl.xlabel("Time")
 		pl.show()
 	
@@ -155,7 +160,7 @@ class Visualization:
 	
 	# A helper function for toDot
 	def describeNode(self, instance=None, numDescriptors=3, largest=True, numChildren=True):
-		description = {'parent':[], 'instance':[], 'desc':""}
+		description = {'parent':[], 'instance':[], 'no_compare':[], 'desc':""}
 		if self.tree in self.tree.util_values:
 			description['desc'] = str(len(self.tree.instances))+" elements\\n"+"("+str(round(self.tree.util_values[self.tree],4))+")\\n"
 		if not self.tree.parent is None:
@@ -164,11 +169,22 @@ class Visualization:
 			parent_av = self.tree.parent.utility.get_av_counts()
 			child_av = self.tree.utility.get_av_counts()
 			for a in child_av.keys():
-				diff_av[round(parent_av[a]-child_av[a],2)] = a
-			absVal = [abs(v) for v in diff_av]
-			toSort = zip(absVal, diff_av, child_av.keys())
+				diff_av[a] = round(parent_av[a]-child_av[a],2)
+			absVal = [abs(diff_av[a]) for a in diff_av]
+			toSort = zip(absVal, [diff_av[a] for a in diff_av], [a for a in diff_av])
 			toSort.sort(reverse=True)
 			description['parent'] = [a+":"+str(d) for (_,d,a) in toSort]
+		
+		# define centroid of cluster
+		diff_av = {}
+		child_av = self.tree.utility.get_av_counts()
+		for a in child_av.keys():
+			diff_av[a] = round(child_av[a],2)
+		absVal = [abs(diff_av[a]) for a in diff_av]
+		toSort = zip(absVal, [diff_av[a] for a in diff_av], [a for a in diff_av])
+		toSort.sort(reverse=True)
+		description['no_compare'] = [a+":"+str(d) for (_,d,a) in toSort]
+		
 		if not instance is None:
 			if self.tree.instances == [instance]:
 				description['instance'] = [instance.pretty_print(False).replace(" ","\\n")]
@@ -177,9 +193,9 @@ class Visualization:
 				diff_av = {}
 				child_av = self.tree.utility.get_av_counts()
 				for a in child_av:
-					diff_av[round(instance.getAttribute(a)-child_av[a],2)] = a
-				absVal = [abs(v) for v in diff_av]
-				toSort = zip(absVal, diff_av, child_av.keys())
+					diff_av[a] = round(instance.getAttribute(a)-child_av[a],2)
+				absVal = [abs(diff_av[a]) for a in diff_av]
+				toSort = zip(absVal, [diff_av[a] for a in diff_av], [a for a in diff_av])
 				toSort.sort(reverse=True)
 				description['instance'] = [a+":"+str(d) for (_,d,a) in toSort]
 		return description
@@ -257,13 +273,14 @@ class Visualization:
 		return number, dotString
 	
 	# An interactive plot for Examinining Surprise
-	def plotSurprise(self, time=True):
+	def plotSurprise(self, time=True, unscale=False):
 		self.surprise_list = [inst.surprise_num for inst in self.tree.instances]
 		if time:
 			self.inst_time_list = [inst.time for inst in self.tree.instances]
 		else:
 			self.inst_time_list = range(len(self.surprise_list))
 		Visualization.plotted_viz = self
+		Visualization.unscale_plots = unscale
 		
 		fig = pl.figure()
 		ax = fig.add_subplot(111)
@@ -286,7 +303,7 @@ class Visualization:
 		return str(self.tree.utility)
 
 class PlotManager:
-	parent = False
+	mode = 'instance'
 	number = 3
 	
 	def onpress(self, event):
@@ -295,12 +312,13 @@ class PlotManager:
 			self.number = num
 		except ValueError:
 			if event.key == "p":
-				self.parent = not self.parent
+				self.mode = 'parent'
+			if event.key == "i":
+				self.mode = 'instance'
+			if event.key == "n":
+				self.mode = 'no_compare'
 		labelString = "number attributes shown:"+str(self.number)+" measured from "
-		if self.parent:
-			labelString += "parent"
-		else:
-			labelString += "instance"
+		labelString += self.mode
 		pl.xlabel(labelString)
 		pl.draw()
 	
@@ -328,4 +346,4 @@ class PlotManager:
 			bbox = dict(boxstyle = 'round,pad=0.5', fc = 'white', alpha = 1.0),
 			arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'))
 		pl.draw()
-		Visualization.plotted_viz.tree.instances[index].render(self.parent, self.number)
+		Visualization.plotted_viz.tree.instances[index].render(self.mode, self.number, unscale=Visualization.unscale_plots)

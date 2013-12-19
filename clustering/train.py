@@ -20,8 +20,8 @@ def buildTree(parser, depth, dir_name, filestart=None):
 if __name__ == "__main__":
 	namecols = [0]
 	timecols = [2]
-	valcols = range(3,14)
+	valcols = range(3,15)
 	parser = Parser("AllPhoneData_approx_cleaned.csv",namecols,timecols,valcols,normalize=True)
 	
-	tree = buildTree(parser, 100000, ".", "test2_")
+	tree = buildTree(parser, 100000, ".", "pixelDensity_")
 	tree.viz.plotSurprise()

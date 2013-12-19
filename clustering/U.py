@@ -31,11 +31,15 @@ class Utility:
 			self.count = constructor.count
 			self.sq_count = constructor.sq_count
 	
-	def get_av_counts(self):
+	def get_av_counts(self, unscale_with_parser=None):
 		simple_av = {}
 		for a in self.av_counts:
 			if numerical_key in self.av_counts[a]:
 				simple_av[a] = self.av_counts[a][numerical_key][0]/self.count
+				if not unscale_with_parser is None:
+					parser = unscale_with_parser
+					simple_av[a] * parser.pastCalc[a]['std']
+					simple_av[a] + parser.pastCalc[a]['avg']
 		return simple_av
 	
 	def increment_counts(self, instance):
