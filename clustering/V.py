@@ -71,7 +71,7 @@ class Visualization:
 		
 		with open(filename, 'wb') as csvfile:
 			writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-			writer.writerow(['Name', 'Release Date', 'Surprise', 'Num Merges', 'Num Splits', 'Depth', 'Description'])
+			writer.writerow(['Name', 'Release Date', 'Surprise', 'Divided by Average Surprise', 'Num Merges', 'Num Splits', 'Depth', 'Description'])
 			for inst in self.tree.instances:
 				index = time_list.index(inst.time)
 				writer.writerow([inst.name, inst.time, inst.surprise_num, inst.surprise_num/surprise_list[index], len(inst.merges), len(inst.splits), inst.depth, inst.splitMergeStory])
