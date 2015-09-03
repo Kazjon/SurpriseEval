@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.svm import SVR
 from MU import MisclassUncert
 from OD import ObservedDistribution
-from sklearn.grid_search import IterGrid
+from sklearn.grid_search import ParameterGrid
 from ED import ExpectedDistribution
 from joblib import Parallel, delayed
 from elementtree.SimpleXMLWriter import XMLWriter
@@ -38,7 +38,7 @@ class GridSearchED(ExpectedDistribution):
 			for param in self.params[0.5]: #gridsearch currently only supports EDs with paramsets uniform across contours
 				g[param] = grid*self.params[0.5][param]
 		
-		self.grid = IterGrid(g)
+		self.grid = ParameterGrid(g)
 		if train:
 			self.train()
 	

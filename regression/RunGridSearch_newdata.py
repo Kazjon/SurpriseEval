@@ -40,6 +40,7 @@ if __name__ == "__main__":
 	Cs['Release Year'] = 1
 	Cs['RAM Capacity (Mb)'] = 1
 	Cs['ROM Capacity (Mb)'] = 1
+	Cs['Storage (Mb)'] = 1
 	Cs['CPU Clock (MHz)'] = 1
 	Cs['Display Diagonal (in)'] = 1
 	Cs['Display Width(px)'] = 1
@@ -55,6 +56,7 @@ if __name__ == "__main__":
 	gammas['Release Year'] = 1e-2
 	gammas['RAM Capacity (Mb)'] = 1e-2
 	gammas['ROM Capacity (Mb)'] = 1e-2
+	gammas['Storage (Mb)'] = 1
 	gammas['CPU Clock (MHz)'] = 1e-2
 	gammas['Display Diagonal (in)'] = 1e-2
 	gammas['Display Width(px)'] = 1e-2
@@ -76,6 +78,8 @@ if __name__ == "__main__":
 	#found[('Release Year','Width (mm)')] = {'C':1000,'gamma':0.1}
 	
 	prefix = "gridoutput/"
+	if not os.path.exists(prefix):
+	    os.makedirs(prefix)
 	t = time.localtime(time.time())
 	logfn = os.path.join(prefix,"gridlog_"+str(t[0])+'.'+str(t[1])+'.'+str(t[2])+'_'+str(t[3])+'.'+str(t[4])+'.'+str(t[5])+".xml")
 	with open(logfn,'w') as f:
